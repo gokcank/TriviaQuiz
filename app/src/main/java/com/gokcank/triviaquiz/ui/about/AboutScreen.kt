@@ -1,5 +1,7 @@
 package com.gokcank.triviaquiz.ui.about
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,9 +12,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -30,6 +34,8 @@ fun AboutScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -88,7 +94,17 @@ fun AboutScreen(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(24.dp))
+
+            TextButton(onClick = {
+                val intent = Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://raw.githubusercontent.com/gokcank/TriviaQuiz/master/PRIVACY_POLICY.md"))
+                context.startActivity(intent)
+            }) {
+                Text("Gizlilik Politikası", color = ElectricBlue, fontSize = 13.sp)
+            }
+
+            Spacer(Modifier.height(32.dp))
         }
     }
 }
