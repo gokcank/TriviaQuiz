@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gokcank.triviaquiz.ads.BannerAd
 import com.gokcank.triviaquiz.data.SettingsRepository
 import com.gokcank.triviaquiz.theme.CardBorder
 import com.gokcank.triviaquiz.theme.CardDark
@@ -111,8 +112,13 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(72.dp))
         }
+        BannerAd(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        )
     }
 }
 

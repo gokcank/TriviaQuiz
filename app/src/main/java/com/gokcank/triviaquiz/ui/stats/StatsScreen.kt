@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gokcank.triviaquiz.ads.BannerAd
 import com.gokcank.triviaquiz.data.CategoryStat
 import com.gokcank.triviaquiz.theme.CardDark
 import com.gokcank.triviaquiz.theme.CorrectGreen
@@ -149,8 +150,13 @@ fun StatsScreen(
                 }
             }
 
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(72.dp))
         }
+        BannerAd(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        )
     }
 }
 

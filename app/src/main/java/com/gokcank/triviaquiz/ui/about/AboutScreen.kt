@@ -1,6 +1,7 @@
 package com.gokcank.triviaquiz.ui.about
 
 import android.content.Intent
+import com.gokcank.triviaquiz.ads.BannerAd
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -79,10 +80,6 @@ fun AboutScreen(
             // ── Bilgiler ─────────────────────────────────────────────────
             SectionCard(title = "HAKKINDA") {
                 InfoRow(label = "Geliştirici", value = "gokcank")
-                Spacer(Modifier.height(12.dp))
-                InfoRow(label = "Sorular", value = "Türkçe soru bankası")
-                Spacer(Modifier.height(12.dp))
-                InfoRow(label = "İnternet", value = "Gerekmez — çevrimdışı")
             }
 
             Spacer(Modifier.height(24.dp))
@@ -104,8 +101,13 @@ fun AboutScreen(
                 Text("Gizlilik Politikası", color = ElectricBlue, fontSize = 13.sp)
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(72.dp))
         }
+        BannerAd(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        )
     }
 }
 
