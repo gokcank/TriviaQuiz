@@ -98,7 +98,7 @@ fun AboutScreen(
 
             TextButton(onClick = {
                 val intent = Intent(Intent.ACTION_VIEW,
-                    Uri.parse("https://raw.githubusercontent.com/gokcank/TriviaQuiz/master/PRIVACY_POLICY.md"))
+                    Uri.parse("https://raw.githubusercontent.com/gokcank/TriviaQuiz/refs/heads/master/PRIVACY_POLICY.md"))
                 context.startActivity(intent)
             }) {
                 Text("Gizlilik Politikası", color = ElectricBlue, fontSize = 13.sp)
