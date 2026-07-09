@@ -93,12 +93,25 @@ fun AboutScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            TextButton(onClick = {
-                val intent = Intent(Intent.ACTION_VIEW,
-                    Uri.parse("https://raw.githubusercontent.com/gokcank/TriviaQuiz/refs/heads/master/PRIVACY_POLICY.md"))
-                context.startActivity(intent)
-            }) {
-                Text("Gizlilik Politikası", color = ElectricBlue, fontSize = 13.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://gokcank.vercel.app/")))
+                }) {
+                    Text("Web", color = ElectricBlue, fontSize = 13.sp)
+                }
+                TextButton(onClick = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://github.com/gokcank")))
+                }) {
+                    Text("GitHub", color = ElectricBlue, fontSize = 13.sp)
+                }
+                TextButton(onClick = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://raw.githubusercontent.com/gokcank/TriviaQuiz/refs/heads/master/PRIVACY_POLICY.md")))
+                }) {
+                    Text("Gizlilik", color = ElectricBlue, fontSize = 13.sp)
+                }
             }
 
             Spacer(Modifier.height(72.dp))

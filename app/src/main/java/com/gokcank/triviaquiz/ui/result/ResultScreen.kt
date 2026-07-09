@@ -5,7 +5,6 @@ import android.content.Intent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -72,16 +71,6 @@ fun ResultScreen(
             displayScore = i
         }
     }
-
-    // Animasyon — kart ölçeği
-    val cardScale by animateFloatAsState(
-        targetValue   = 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness    = Spring.StiffnessLow
-        ),
-        label = "cardScale"
-    )
 
     Box(
         modifier = modifier

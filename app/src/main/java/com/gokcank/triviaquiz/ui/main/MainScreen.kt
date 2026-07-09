@@ -1,5 +1,7 @@
 package com.gokcank.triviaquiz.ui.main
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -24,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.gokcank.triviaquiz.Quiz
 import com.gokcank.triviaquiz.ads.BannerAd
 import com.gokcank.triviaquiz.data.model.CATEGORIES
@@ -42,11 +45,32 @@ fun MainScreen(
     onOpenAbout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val activity = LocalContext.current as Activity
+    var showQuitDialog    by remember { mutableStateOf(false) }
     var selectedCategory  by remember { mutableStateOf(CATEGORIES[0]) }
     var selectedDifficulty by remember { mutableStateOf("easy") }
     var selectedAmount    by remember { mutableIntStateOf(10) }
     var selectedTimed     by remember { mutableStateOf(true) }
     var categoryExpanded  by remember { mutableStateOf(false) }
+
+    BackHandler { showQuitDialog = true }
+
+    if (showQuitDialog) {
+        AlertDialog(
+            onDismissRequest = { showQuitDialog = false },
+            title = { Text("Uygulamadan çık?") },
+            confirmButton = {
+                TextButton(onClick = { activity.finish() }) {
+                    Text("Çık", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showQuitDialog = false }) {
+                    Text("İptal")
+                }
+            }
+        )
+    }
 
     val difficultyOptions = listOf(
         Triple("easy",   "Kolay", "🟢"),

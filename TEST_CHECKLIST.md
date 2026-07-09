@@ -78,8 +78,8 @@ adb install -r "app\build\outputs\apk\debug\app-debug.apk"
 
 Testler tamamlanıp onaylandıktan sonra:
 
-- [ ] AdMob hesabını oluştur ve gerçek uygulama ID'sini al
-- [ ] `local.properties`'teki `#ADMOB_*` satırlarının başındaki `#` kaldırılarak gerçek ID'ler girilir
+- [X] AdMob hesabını oluştur ve gerçek uygulama ID'sini al
+- [X] `local.properties`'teki `#ADMOB_*` satırlarının başındaki `#` kaldırılarak gerçek ID'ler girilir
 - [ ] Gizlilik politikası URL'si AdMob Console ve Hakkında ekranına eklenir
 - [ ] Play Console'da kapalı test süreci başlatılır
 - [ ] `keystore/release.jks` dosyası güvenli yerde yedeklenir

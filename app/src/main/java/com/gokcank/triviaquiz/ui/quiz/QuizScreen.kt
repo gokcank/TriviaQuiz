@@ -1,6 +1,7 @@
 package com.gokcank.triviaquiz.ui.quiz
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gokcank.triviaquiz.ads.BannerAd
 import com.gokcank.triviaquiz.ads.RewardedAdManager
 import com.gokcank.triviaquiz.theme.*
 import com.gokcank.triviaquiz.util.appViewModel
@@ -45,6 +47,7 @@ fun QuizScreen(
     quizViewModel: QuizViewModel = appViewModel { QuizViewModel(it) }
 ) {
     var navigated by remember { mutableStateOf(false) }
+    var showExitDialog by remember { mutableStateOf(false) }
     val activity = LocalContext.current as Activity
 
     LaunchedEffect(Unit) {
@@ -60,6 +63,27 @@ fun QuizScreen(
             val s = state as QuizUiState.Finished
             onQuizComplete(s.score, s.total, s.bestStreak, s.skipped)
         }
+    }
+
+    BackHandler(enabled = state is QuizUiState.Playing) { showExitDialog = true }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("Oyundan çık?") },
+            text  = { Text("İlerleme kaydedilmeyecek.") },
+            confirmButton = {
+                TextButton(onClick = { showExitDialog = false; onBack() }) {
+                    Text("Çık", color = WrongRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("Devam et")
+                }
+            },
+            containerColor = CardDark
+        )
     }
 
     Box(
@@ -84,10 +108,15 @@ fun QuizScreen(
                         onClosed = { quizViewModel.resumeTimer() }
                     )
                 },
-                onBack       = onBack
+                onBack = { showExitDialog = true }
             )
             is QuizUiState.Finished -> LoadingContent() // geçiş sırasında
         }
+        BannerAd(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        )
     }
 }
 
@@ -309,7 +338,7 @@ private fun PlayingContent(
             if (index < q.shuffledAnswers.lastIndex) Spacer(Modifier.height(10.dp))
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(72.dp))
     }
 }
 
