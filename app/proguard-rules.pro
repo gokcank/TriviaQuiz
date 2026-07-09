@@ -40,3 +40,16 @@
 
 # ── Data model sınıfları (DataStore + JSON) ──────────────────────────────────
 -keep class com.gokcank.triviaquiz.data.** { *; }
+
+# ── Room / WorkManager (AdMob tarafından içten kullanılır) ───────────────────
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keep @androidx.room.Database class * { *; }
+-keepclassmembers class * extends androidx.room.RoomDatabase {
+    public static ** INSTANCE;
+    public static ** Companion;
+}
+-keep class androidx.work.** { *; }
+-keep class * extends androidx.work.Worker { *; }
+-keep class * extends androidx.work.ListenableWorker {
+    public <init>(android.content.Context, androidx.work.WorkerParameters);
+}
