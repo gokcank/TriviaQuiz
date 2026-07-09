@@ -1,0 +1,31 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+build/
+.kotlin/
+/.idea/
+
+# Gizli değerler — ASLA repoya girmez
+*.jks
+*.keystore
+keystore/
+google-services.json
+
+# Araç/oturum dosyaları
+.claude/
+
+# Kişisel notlar ve sohbet geçmişi
+Building An Android Trivia App.md
+scratch_notes.md
