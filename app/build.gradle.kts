@@ -27,7 +27,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         // AdMob — gerçek ID'ler local.properties'te; yoksa Google'ın resmî test ID'leri
         manifestPlaceholders["admobAppId"] =
