@@ -27,14 +27,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gokcank.triviaquiz.Quiz
 import com.gokcank.triviaquiz.ads.BannerAd
 import com.gokcank.triviaquiz.data.model.CATEGORIES
 import com.gokcank.triviaquiz.data.model.Category
 import com.gokcank.triviaquiz.data.model.displayName
-import com.gokcank.triviaquiz.theme.*
+import com.gokcank.triviaquiz.theme.TriviaTheme
 import com.gokcank.triviaquiz.ui.components.SectionCard
 import com.gokcank.triviaquiz.ui.components.SelectableChip
+import com.gokcank.triviaquiz.util.appViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +46,8 @@ fun MainScreen(
     onOpenStats: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dailyViewModel: DailyViewModel = appViewModel { DailyViewModel(it) }
 ) {
     val activity = LocalContext.current as Activity
     var showQuitDialog    by remember { mutableStateOf(false) }
@@ -52,6 +56,14 @@ fun MainScreen(
     var selectedAmount    by remember { mutableIntStateOf(10) }
     var selectedTimed     by remember { mutableStateOf(true) }
     var categoryExpanded  by remember { mutableStateOf(false) }
+
+    val dailyState by dailyViewModel.daily.collectAsStateWithLifecycle()
+
+    // Ekrana her dönüşte gün devrini yakala (gece yarısı geçilmiş olabilir)
+    LifecycleResumeEffect(Unit) {
+        dailyViewModel.refresh()
+        onPauseOrDispose { }
+    }
 
     BackHandler { showQuitDialog = true }
 
@@ -82,7 +94,7 @@ fun MainScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DeepNavy)
+            .background(TriviaTheme.colors.background)
     ) {
         Column(
             modifier = Modifier
@@ -99,16 +111,22 @@ fun MainScreen(
             Text(
                 text  = "TriviaQuiz",
                 style = MaterialTheme.typography.displayLarge,
-                color = ElectricBlue
+                color = TriviaTheme.colors.accent
             )
             Text(
                 text  = "Bilgini Sına!",
                 style = MaterialTheme.typography.titleMedium,
-                color = Muted,
+                color = TriviaTheme.colors.textMuted,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(24.dp))
+
+            // ── Günlük Görev ─────────────────────────────────────────────
+            dailyState?.let {
+                DailyMissionCard(state = it)
+                Spacer(Modifier.height(16.dp))
+            }
 
             // ── Kategori ─────────────────────────────────────────────────
             SectionCard(title = "KATEGORİ") {
@@ -126,25 +144,25 @@ fun MainScreen(
                             .fillMaxWidth(),
                         shape  = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor      = ElectricBlue,
-                            unfocusedBorderColor    = CardBorder,
-                            focusedTextColor        = OnBackground,
-                            unfocusedTextColor      = OnBackground,
-                            focusedContainerColor   = CardDark,
-                            unfocusedContainerColor = CardDark
+                            focusedBorderColor      = TriviaTheme.colors.accent,
+                            unfocusedBorderColor    = TriviaTheme.colors.cardBorder,
+                            focusedTextColor        = TriviaTheme.colors.textPrimary,
+                            unfocusedTextColor      = TriviaTheme.colors.textPrimary,
+                            focusedContainerColor   = TriviaTheme.colors.card,
+                            unfocusedContainerColor = TriviaTheme.colors.card
                         )
                     )
                     ExposedDropdownMenu(
                         expanded         = categoryExpanded,
                         onDismissRequest = { categoryExpanded = false },
-                        containerColor   = NavyMid
+                        containerColor   = TriviaTheme.colors.surface
                     ) {
                         CATEGORIES.forEach { cat ->
                             DropdownMenuItem(
                                 text = {
                                     Text(
                                         cat.displayName,
-                                        color = if (cat == selectedCategory) ElectricBlue else OnBackground
+                                        color = if (cat == selectedCategory) TriviaTheme.colors.accent else TriviaTheme.colors.textPrimary
                                     )
                                 },
                                 onClick = {
@@ -166,7 +184,7 @@ fun MainScreen(
                         SelectableChip(
                             label    = "$emoji $label",
                             selected = selectedDifficulty == key,
-                            color    = ElectricBlue,
+                            color    = TriviaTheme.colors.accent,
                             modifier = Modifier.weight(1f),
                             onClick  = { selectedDifficulty = key }
                         )
@@ -183,7 +201,7 @@ fun MainScreen(
                         SelectableChip(
                             label    = "$amount",
                             selected = selectedAmount == amount,
-                            color    = ElectricPurple,
+                            color    = TriviaTheme.colors.accentAlt,
                             modifier = Modifier.weight(1f),
                             onClick  = { selectedAmount = amount }
                         )
@@ -199,14 +217,14 @@ fun MainScreen(
                     SelectableChip(
                         label    = "⏱ Zamanlı",
                         selected = selectedTimed,
-                        color    = WarningOrange,
+                        color    = TriviaTheme.colors.warning,
                         modifier = Modifier.weight(1f),
                         onClick  = { selectedTimed = true }
                     )
                     SelectableChip(
                         label    = "∞ Süresiz",
                         selected = !selectedTimed,
-                        color    = CorrectGreen,
+                        color    = TriviaTheme.colors.correct,
                         modifier = Modifier.weight(1f),
                         onClick  = { selectedTimed = false }
                     )
@@ -251,10 +269,10 @@ fun MainScreen(
                 Text(text = "📊", fontSize = 19.sp)
             }
             IconButton(onClick = onOpenSettings) {
-                Icon(Icons.Default.Settings, contentDescription = "Ayarlar", tint = Muted)
+                Icon(Icons.Default.Settings, contentDescription = "Ayarlar", tint = TriviaTheme.colors.textMuted)
             }
             IconButton(onClick = onOpenAbout) {
-                Icon(Icons.Default.Info, contentDescription = "Hakkında", tint = Muted)
+                Icon(Icons.Default.Info, contentDescription = "Hakkında", tint = TriviaTheme.colors.textMuted)
             }
         }
     }
@@ -277,7 +295,7 @@ private fun StartButton(onClick: () -> Unit) {
             .height(60.dp)
             .scale(scale)
             .clip(RoundedCornerShape(20.dp))
-            .background(Brush.horizontalGradient(listOf(BlueStart, PurpleEnd)))
+            .background(Brush.horizontalGradient(listOf(TriviaTheme.colors.gradientStart, TriviaTheme.colors.gradientEnd)))
             .clickable(
                 indication        = null,
                 interactionSource = remember { MutableInteractionSource() }

@@ -32,5 +32,6 @@ data class Result(
     val timed: Boolean,
     val amount: Int = 10,
     val bestStreak: Int = 0,
-    val skipped: Int = 0
+    val skipped: Int = 0,
+    val dailyCompletedNow: Boolean = false
 ) : NavKey

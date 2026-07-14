@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gokcank.triviaquiz.data.SettingsRepository
+import com.gokcank.triviaquiz.data.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -25,6 +26,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     val vibrationEnabled: StateFlow<Boolean> = repository.vibrationEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    val themeMode: StateFlow<ThemeMode> = repository.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemeMode.DARK)
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { repository.setThemeMode(mode) }
+    }
 
     fun setTimerSeconds(seconds: Int) {
         viewModelScope.launch { repository.setTimerSeconds(seconds) }

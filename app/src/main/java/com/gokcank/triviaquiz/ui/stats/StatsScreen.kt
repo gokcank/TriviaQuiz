@@ -1,5 +1,7 @@
 package com.gokcank.triviaquiz.ui.stats
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,7 +14,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,19 +28,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gokcank.triviaquiz.ads.BannerAd
 import com.gokcank.triviaquiz.data.CategoryStat
-import com.gokcank.triviaquiz.theme.CardDark
-import com.gokcank.triviaquiz.theme.CorrectGreen
-import com.gokcank.triviaquiz.theme.DeepNavy
-import com.gokcank.triviaquiz.theme.ElectricBlue
-import com.gokcank.triviaquiz.theme.GoldYellow
-import com.gokcank.triviaquiz.theme.Muted
-import com.gokcank.triviaquiz.theme.OnBackground
-import com.gokcank.triviaquiz.theme.OnSurface
-import com.gokcank.triviaquiz.theme.WarningOrange
-import com.gokcank.triviaquiz.theme.WrongRed
+import com.gokcank.triviaquiz.games.PlayGamesManager
+import com.gokcank.triviaquiz.theme.TriviaTheme
 import com.gokcank.triviaquiz.ui.components.SectionCard
+import com.gokcank.triviaquiz.ui.components.SelectableChip
 import com.gokcank.triviaquiz.ui.components.StatCard
 import com.gokcank.triviaquiz.util.appViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun StatsScreen(
@@ -49,7 +47,7 @@ fun StatsScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DeepNavy)
+            .background(TriviaTheme.colors.background)
     ) {
         Column(
             modifier = Modifier
@@ -66,17 +64,71 @@ fun StatsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = Muted)
+                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = TriviaTheme.colors.textMuted)
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text  = "İstatistikler",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = OnBackground
+                    color = TriviaTheme.colors.textPrimary
                 )
             }
 
             Spacer(Modifier.height(24.dp))
+
+            // ── Play Games ───────────────────────────────────────────────
+            if (PlayGamesManager.enabled) {
+                val isAuthenticated by PlayGamesManager.isAuthenticated.collectAsStateWithLifecycle()
+                val scope = rememberCoroutineScope()
+                val launcher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.StartActivityForResult()
+                ) { }
+
+                SectionCard(title = "PLAY GAMES") {
+                    if (isAuthenticated) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SelectableChip(
+                                label    = "🏆 Başarımlar",
+                                selected = true,
+                                color    = TriviaTheme.colors.gold,
+                                modifier = Modifier.weight(1f),
+                                onClick  = {
+                                    scope.launch {
+                                        PlayGamesManager.achievementsIntent()?.let(launcher::launch)
+                                    }
+                                }
+                            )
+                            SelectableChip(
+                                label    = "🥇 Liderlik",
+                                selected = true,
+                                color    = TriviaTheme.colors.accent,
+                                modifier = Modifier.weight(1f),
+                                onClick  = {
+                                    scope.launch {
+                                        PlayGamesManager.allLeaderboardsIntent()?.let(launcher::launch)
+                                    }
+                                }
+                            )
+                        }
+                    } else {
+                        Text(
+                            text     = "Başarımların ve liderlik sıralaman için Play Games'e giriş yap.",
+                            color    = TriviaTheme.colors.textMuted,
+                            fontSize = 12.sp
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        SelectableChip(
+                            label    = "🎮 Giriş Yap",
+                            selected = true,
+                            color    = TriviaTheme.colors.accent,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick  = { PlayGamesManager.signIn() }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+            }
 
             if (stats.gamesPlayed == 0) {
                 // ── Boş Durum ────────────────────────────────────────────
@@ -88,14 +140,14 @@ fun StatsScreen(
                     Spacer(Modifier.height(16.dp))
                     Text(
                         text       = "Henüz istatistik yok",
-                        color      = OnBackground,
+                        color      = TriviaTheme.colors.textPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize   = 18.sp
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text      = "Bir quiz bitir, sonuçların burada birikecek.",
-                        color     = Muted,
+                        color     = TriviaTheme.colors.textMuted,
                         fontSize  = 14.sp,
                         textAlign = TextAlign.Center
                     )
@@ -110,21 +162,21 @@ fun StatsScreen(
                         emoji    = "🎮",
                         label    = "Oyun",
                         value    = "${stats.gamesPlayed}",
-                        color    = ElectricBlue,
+                        color    = TriviaTheme.colors.accent,
                         modifier = Modifier.weight(1f)
                     )
                     StatCard(
                         emoji    = "🎯",
                         label    = "Doğruluk",
                         value    = "%${stats.accuracyPercent}",
-                        color    = CorrectGreen,
+                        color    = TriviaTheme.colors.correct,
                         modifier = Modifier.weight(1f)
                     )
                     StatCard(
                         emoji    = "🔥",
                         label    = "En İyi Seri",
                         value    = "${stats.bestStreak}",
-                        color    = WarningOrange,
+                        color    = TriviaTheme.colors.warning,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -133,7 +185,7 @@ fun StatsScreen(
 
                 Text(
                     text     = "🏆 En iyi oyun skoru: %${stats.bestScorePercent}  ·  Toplam ${stats.questionsAnswered} soru",
-                    color    = GoldYellow,
+                    color    = TriviaTheme.colors.gold,
                     fontSize = 12.sp,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
@@ -172,7 +224,7 @@ private fun CategoryRow(name: String, stat: CategoryStat) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            Text(text = name, color = OnSurface, fontSize = 14.sp)
+            Text(text = name, color = TriviaTheme.colors.textSecondary, fontSize = 14.sp)
             Text(
                 text       = "%${stat.percent} · ${stat.correct}/${stat.total}",
                 color      = barColor,
@@ -186,7 +238,7 @@ private fun CategoryRow(name: String, stat: CategoryStat) {
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp))
-                .background(CardDark)
+                .background(TriviaTheme.colors.card)
         ) {
             Box(
                 modifier = Modifier
@@ -199,8 +251,10 @@ private fun CategoryRow(name: String, stat: CategoryStat) {
     }
 }
 
+@Composable
+@ReadOnlyComposable
 private fun accuracyColor(percent: Int): Color = when {
-    percent >= 70 -> CorrectGreen
-    percent >= 40 -> WarningOrange
-    else          -> WrongRed
+    percent >= 70 -> TriviaTheme.colors.correct
+    percent >= 40 -> TriviaTheme.colors.warning
+    else          -> TriviaTheme.colors.wrong
 }

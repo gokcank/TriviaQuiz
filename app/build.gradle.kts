@@ -26,8 +26,8 @@ android {
         applicationId = "com.gokcank.triviaquiz"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         // AdMob — gerçek ID'ler local.properties'te; yoksa Google'ın resmî test ID'leri
         manifestPlaceholders["admobAppId"] =
@@ -38,6 +38,23 @@ android {
             "\"${secret("ADMOB_INTERSTITIAL_ID", "ca-app-pub-3940256099942544/1033173712")}\"")
         buildConfigField("String", "ADMOB_REWARDED_ID",
             "\"${secret("ADMOB_REWARDED_ID", "ca-app-pub-3940256099942544/5224354917")}\"")
+
+        // Play Games Services — kimlikler local.properties'te; yoksa özellik kendini kapatır.
+        // Sayısal APP_ID meta-data'ya doğrudan yazılamaz (aapt int'e çevirir, SDK string
+        // bekler ve çöker) → @string kaynağı üzerinden verilir.
+        val pgsAppId = secret("PGS_APP_ID", "0")
+        resValue("string", "game_services_project_id", pgsAppId)
+        buildConfigField("boolean", "PGS_ENABLED",
+            (pgsAppId != "0" && pgsAppId.all { it.isDigit() }).toString())
+        listOf(
+            "PGS_LB_TOTAL_CORRECT", "PGS_LB_BEST_STREAK",
+            "PGS_ACH_FIRST_GAME", "PGS_ACH_GAMES_10", "PGS_ACH_GAMES_50",
+            "PGS_ACH_CORRECT_100", "PGS_ACH_CORRECT_500", "PGS_ACH_PERFECT",
+            "PGS_ACH_STREAK_10", "PGS_ACH_HARD_MASTER",
+            "PGS_ACH_DAILY_FIRST", "PGS_ACH_DAILY_7"
+        ).forEach { key ->
+            buildConfigField("String", key, "\"${secret(key, "")}\"")
+        }
     }
 
     // Release imzası: dört anahtar da local.properties'te varsa gerçek keystore,
@@ -75,6 +92,7 @@ android {
       aidl = false
       buildConfig = true
       shaders = false
+      resValues = true   // PGS APP_ID @string kaynağı için
     }
 
     packaging {
@@ -135,6 +153,10 @@ dependencies {
 
   // Reklamlar — Google Mobile Ads (UMP dahil)
   implementation(libs.play.services.ads)
+
+  // Play Games Services v2 — başarımlar + liderlik tabloları
+  implementation(libs.play.services.games.v2)
+  implementation(libs.kotlinx.coroutines.play.services)
 
   // Google Fonts
   implementation(libs.androidx.compose.ui.google.fonts)

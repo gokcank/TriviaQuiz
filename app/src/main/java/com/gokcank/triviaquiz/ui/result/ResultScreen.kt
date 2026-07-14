@@ -5,7 +5,9 @@ import android.content.Intent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gokcank.triviaquiz.ads.InterstitialAdManager
-import com.gokcank.triviaquiz.theme.*
+import com.gokcank.triviaquiz.theme.TriviaTheme
 import com.gokcank.triviaquiz.ui.components.StatCard
 
 @Composable
@@ -30,6 +32,7 @@ fun ResultScreen(
     timed: Boolean,
     bestStreak: Int = 0,
     skipped: Int = 0,
+    dailyCompletedNow: Boolean = false,
     onPlayAgain: () -> Unit,
     onGoHome: () -> Unit,
     modifier: Modifier = Modifier
@@ -75,12 +78,13 @@ fun ResultScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DeepNavy),
+            .background(TriviaTheme.colors.background),
         contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -90,13 +94,13 @@ fun ResultScreen(
             Text(
                 text       = "Sonuç",
                 style      = MaterialTheme.typography.headlineLarge,
-                color      = OnBackground,
+                color      = TriviaTheme.colors.textPrimary,
                 fontWeight = FontWeight.ExtraBold
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 text  = "$categoryName · ${difficultyLabel(difficulty)} · ${if (timed) "⏱ Zamanlı" else "∞ Süresiz"}",
-                color = Muted,
+                color = TriviaTheme.colors.textMuted,
                 fontSize = 13.sp
             )
 
@@ -111,7 +115,7 @@ fun ResultScreen(
                 CircularProgressIndicator(
                     progress           = { 1f },
                     modifier           = Modifier.fillMaxSize(),
-                    color              = CardDark,
+                    color              = TriviaTheme.colors.card,
                     strokeWidth        = 14.dp,
                     strokeCap          = StrokeCap.Round,
                     trackColor         = Color.Transparent,
@@ -136,7 +140,7 @@ fun ResultScreen(
                     )
                     Text(
                         text  = grade,
-                        color = Muted,
+                        color = TriviaTheme.colors.textMuted,
                         fontSize = 13.sp
                     )
                 }
@@ -153,22 +157,32 @@ fun ResultScreen(
                     emoji = "✅",
                     label = "Doğru",
                     value = "$score",
-                    color = CorrectGreen,
+                    color = TriviaTheme.colors.correct,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     emoji = "❌",
                     label = "Yanlış",
                     value = "$wrong",
-                    color = WrongRed,
+                    color = TriviaTheme.colors.wrong,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     emoji = "📊",
                     label = "Başarı",
                     value = "${(percentage * 100).toInt()}%",
-                    color = ElectricBlue,
+                    color = TriviaTheme.colors.accent,
                     modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (dailyCompletedNow) {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text       = "🎁 Günlük görev tamamlandı! Bugün jokerler +1",
+                    color      = TriviaTheme.colors.gold,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize   = 14.sp
                 )
             }
 
@@ -180,7 +194,7 @@ fun ResultScreen(
                 }
                 Text(
                     text       = parts.joinToString("  ·  "),
-                    color      = WarningOrange,
+                    color      = TriviaTheme.colors.warning,
                     fontWeight = FontWeight.SemiBold,
                     fontSize   = 14.sp
                 )
@@ -202,7 +216,7 @@ fun ResultScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            Brush.horizontalGradient(listOf(BlueStart, PurpleEnd)),
+                            Brush.horizontalGradient(listOf(TriviaTheme.colors.gradientStart, TriviaTheme.colors.gradientEnd)),
                             RoundedCornerShape(16.dp)
                         ),
                     contentAlignment = Alignment.Center
@@ -235,7 +249,7 @@ fun ResultScreen(
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape    = RoundedCornerShape(16.dp),
                 border   = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(width = 1.dp),
-                colors   = ButtonDefaults.outlinedButtonColors(contentColor = ElectricBlue)
+                colors   = ButtonDefaults.outlinedButtonColors(contentColor = TriviaTheme.colors.accent)
             ) {
                 Text(
                     "📤  Paylaş",
@@ -252,7 +266,7 @@ fun ResultScreen(
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape    = RoundedCornerShape(16.dp),
                 border   = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(width = 1.dp),
-                colors   = ButtonDefaults.outlinedButtonColors(contentColor = OnSurface)
+                colors   = ButtonDefaults.outlinedButtonColors(contentColor = TriviaTheme.colors.textSecondary)
             ) {
                 Text(
                     "🏠  Ana Menü",
@@ -268,10 +282,12 @@ fun ResultScreen(
 
 // ── Yardımcılar ───────────────────────────────────────────────────────────────
 
+@Composable
+@ReadOnlyComposable
 private fun scoreColor(percentage: Float): Color = when {
-    percentage >= 0.7f -> CorrectGreen
-    percentage >= 0.4f -> WarningOrange
-    else               -> WrongRed
+    percentage >= 0.7f -> TriviaTheme.colors.correct
+    percentage >= 0.4f -> TriviaTheme.colors.warning
+    else               -> TriviaTheme.colors.wrong
 }
 
 private fun difficultyLabel(difficulty: String): String = when (difficulty) {

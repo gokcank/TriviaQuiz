@@ -21,13 +21,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gokcank.triviaquiz.ads.BannerAd
 import com.gokcank.triviaquiz.data.SettingsRepository
-import com.gokcank.triviaquiz.theme.CardBorder
-import com.gokcank.triviaquiz.theme.CardDark
-import com.gokcank.triviaquiz.theme.DeepNavy
-import com.gokcank.triviaquiz.theme.ElectricBlue
-import com.gokcank.triviaquiz.theme.Muted
-import com.gokcank.triviaquiz.theme.OnBackground
-import com.gokcank.triviaquiz.theme.OnSurface
+import com.gokcank.triviaquiz.data.ThemeMode
+import com.gokcank.triviaquiz.theme.TriviaTheme
 import com.gokcank.triviaquiz.ui.components.SectionCard
 import com.gokcank.triviaquiz.ui.components.SelectableChip
 import com.gokcank.triviaquiz.util.appViewModel
@@ -41,11 +36,12 @@ fun SettingsScreen(
     val timerSeconds     by settingsViewModel.timerSeconds.collectAsStateWithLifecycle()
     val soundEnabled     by settingsViewModel.soundEnabled.collectAsStateWithLifecycle()
     val vibrationEnabled by settingsViewModel.vibrationEnabled.collectAsStateWithLifecycle()
+    val themeMode        by settingsViewModel.themeMode.collectAsStateWithLifecycle()
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DeepNavy)
+            .background(TriviaTheme.colors.background)
     ) {
         Column(
             modifier = Modifier
@@ -62,17 +58,40 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = Muted)
+                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = TriviaTheme.colors.textMuted)
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text  = "Ayarlar",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = OnBackground
+                    color = TriviaTheme.colors.textPrimary
                 )
             }
 
             Spacer(Modifier.height(24.dp))
+
+            // ── Görünüm ──────────────────────────────────────────────────
+            SectionCard(title = "GÖRÜNÜM") {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ThemeMode.entries.forEach { mode ->
+                        SelectableChip(
+                            label    = themeModeLabel(mode),
+                            selected = themeMode == mode,
+                            color    = TriviaTheme.colors.accent,
+                            modifier = Modifier.weight(1f),
+                            onClick  = { settingsViewModel.setThemeMode(mode) }
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text     = "Sistem, cihaz temasını takip eder.",
+                    color    = TriviaTheme.colors.textMuted,
+                    fontSize = 12.sp
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
 
             // ── Soru Süresi ──────────────────────────────────────────────
             SectionCard(title = "SORU SÜRESİ") {
@@ -81,7 +100,7 @@ fun SettingsScreen(
                         SelectableChip(
                             label    = "$seconds sn",
                             selected = timerSeconds == seconds,
-                            color    = ElectricBlue,
+                            color    = TriviaTheme.colors.accent,
                             modifier = Modifier.weight(1f),
                             onClick  = { settingsViewModel.setTimerSeconds(seconds) }
                         )
@@ -90,7 +109,7 @@ fun SettingsScreen(
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text     = "Zamanlı modda soru başına düşen süre. Süresiz modu etkilemez.",
-                    color    = Muted,
+                    color    = TriviaTheme.colors.textMuted,
                     fontSize = 12.sp
                 )
             }
@@ -133,17 +152,23 @@ private fun ToggleRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment     = Alignment.CenterVertically
     ) {
-        Text(text = label, color = OnSurface, fontSize = 15.sp)
+        Text(text = label, color = TriviaTheme.colors.textSecondary, fontSize = 15.sp)
         Switch(
             checked         = checked,
             onCheckedChange = onToggle,
             colors = SwitchDefaults.colors(
-                checkedThumbColor    = DeepNavy,
-                checkedTrackColor    = ElectricBlue,
-                uncheckedThumbColor  = Muted,
-                uncheckedTrackColor  = CardDark,
-                uncheckedBorderColor = CardBorder
+                checkedThumbColor    = TriviaTheme.colors.background,
+                checkedTrackColor    = TriviaTheme.colors.accent,
+                uncheckedThumbColor  = TriviaTheme.colors.textMuted,
+                uncheckedTrackColor  = TriviaTheme.colors.card,
+                uncheckedBorderColor = TriviaTheme.colors.cardBorder
             )
         )
     }
+}
+
+private fun themeModeLabel(mode: ThemeMode): String = when (mode) {
+    ThemeMode.DARK   -> "🌙 Koyu"
+    ThemeMode.LIGHT  -> "☀️ Açık"
+    ThemeMode.SYSTEM -> "📱 Sistem"
 }

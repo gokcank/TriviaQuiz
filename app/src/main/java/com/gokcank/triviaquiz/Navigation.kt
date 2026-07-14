@@ -21,7 +21,8 @@ fun MainNavigation() {
 
     NavDisplay(
         backStack = backStack,
-        onBack    = { backStack.removeLastOrNull() },
+        // Yığın asla boşalmamalı — NavDisplay boş yığında çöker
+        onBack    = { if (backStack.size > 1) backStack.removeLastOrNull() },
         // ViewModel'ler nav girdisine bağlanır: girdi kapanınca ViewModel temizlenir
         // (quiz'den çıkınca sayaç durur, yeni oyun bayat Finished state'i görmez)
         entryDecorators = listOf(
@@ -67,17 +68,18 @@ fun MainNavigation() {
                     difficulty     = key.difficulty,
                     amount         = key.amount,
                     timed          = key.timed,
-                    onQuizComplete = { score, total, bestStreak, skipped ->
+                    onQuizComplete = { score, total, bestStreak, skipped, dailyCompletedNow ->
                         backStack.add(
                             Result(
-                                score        = score,
-                                total        = total,
-                                categoryName = key.categoryName,
-                                difficulty   = key.difficulty,
-                                timed        = key.timed,
-                                amount       = key.amount,
-                                bestStreak   = bestStreak,
-                                skipped      = skipped
+                                score             = score,
+                                total             = total,
+                                categoryName      = key.categoryName,
+                                difficulty        = key.difficulty,
+                                timed             = key.timed,
+                                amount            = key.amount,
+                                bestStreak        = bestStreak,
+                                skipped           = skipped,
+                                dailyCompletedNow = dailyCompletedNow
                             )
                         )
                     },
@@ -95,6 +97,7 @@ fun MainNavigation() {
                     timed        = key.timed,
                     bestStreak   = key.bestStreak,
                     skipped      = key.skipped,
+                    dailyCompletedNow = key.dailyCompletedNow,
                     onPlayAgain  = {
                         val size = backStack.size
                         repeat(size - 1) { backStack.removeLastOrNull() }

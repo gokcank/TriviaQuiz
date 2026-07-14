@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.TriviaQuiz" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#0D1B2A</item>
+    </style>
+</resources>

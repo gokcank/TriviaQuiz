@@ -53,7 +53,8 @@ class StatsRepository(private val context: Context) {
         answeredLog: List<Pair<String, Boolean>>,
         gameBestStreak: Int,
         scorePercent: Int
-    ) {
+    ): GameStats {
+        var updatedStats = GameStats()
         context.statsDataStore.edit { prefs ->
             val current = prefs[Keys.GAME_STATS].toGameStats()
             val newCategoryStats = current.categoryStats.toMutableMap()
@@ -73,7 +74,9 @@ class StatsRepository(private val context: Context) {
                 categoryStats     = newCategoryStats
             )
             prefs[Keys.GAME_STATS] = json.encodeToString(GameStats.serializer(), updated)
+            updatedStats = updated
         }
+        return updatedStats
     }
 
     private fun String?.toGameStats(): GameStats =

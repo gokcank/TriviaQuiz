@@ -29,11 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gokcank.triviaquiz.theme.CardBorder
-import com.gokcank.triviaquiz.theme.CardDark
-import com.gokcank.triviaquiz.theme.Muted
-import com.gokcank.triviaquiz.theme.NavyMid
-import com.gokcank.triviaquiz.theme.OnSurface
+import com.gokcank.triviaquiz.theme.TriviaTheme
 
 /** Başlıklı, kart görünümlü bölüm (ana ekran ve ayarlar ekranında ortak) */
 @Composable
@@ -45,13 +41,13 @@ fun SectionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(NavyMid)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .background(TriviaTheme.colors.surface)
+            .border(1.dp, TriviaTheme.colors.cardBorder, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         Text(
             text          = title,
-            color         = Muted,
+            color         = TriviaTheme.colors.textMuted,
             fontSize      = 11.sp,
             fontWeight    = FontWeight.SemiBold,
             letterSpacing = 1.2.sp
@@ -73,7 +69,7 @@ fun StatCard(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(NavyMid)
+            .background(TriviaTheme.colors.surface)
             .border(1.dp, color.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
             .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -88,7 +84,7 @@ fun StatCard(
         )
         Text(
             text     = label,
-            color    = Muted,
+            color    = TriviaTheme.colors.textMuted,
             fontSize = 11.sp
         )
     }
@@ -108,8 +104,8 @@ fun SelectableChip(
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label         = "chipScale"
     )
-    val bgColor     by animateColorAsState(if (selected) color.copy(alpha = 0.2f) else CardDark, label = "chipBg")
-    val borderColor by animateColorAsState(if (selected) color else CardBorder,                  label = "chipBorder")
+    val bgColor     by animateColorAsState(if (selected) color.copy(alpha = 0.2f) else TriviaTheme.colors.card, label = "chipBg")
+    val borderColor by animateColorAsState(if (selected) color else TriviaTheme.colors.cardBorder,                  label = "chipBorder")
 
     Box(
         modifier = modifier
@@ -126,7 +122,7 @@ fun SelectableChip(
     ) {
         Text(
             text       = label,
-            color      = if (selected) color else OnSurface,
+            color      = if (selected) color else TriviaTheme.colors.textSecondary,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             fontSize   = 14.sp,
             textAlign  = TextAlign.Center

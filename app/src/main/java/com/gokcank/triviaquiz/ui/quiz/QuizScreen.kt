@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,7 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gokcank.triviaquiz.ads.BannerAd
 import com.gokcank.triviaquiz.ads.RewardedAdManager
-import com.gokcank.triviaquiz.theme.*
+import com.gokcank.triviaquiz.theme.TriviaTheme
 import com.gokcank.triviaquiz.util.appViewModel
 
 @Composable
@@ -41,12 +42,14 @@ fun QuizScreen(
     difficulty: String,
     amount: Int,
     timed: Boolean,
-    onQuizComplete: (score: Int, total: Int, bestStreak: Int, skipped: Int) -> Unit,
+    onQuizComplete: (score: Int, total: Int, bestStreak: Int, skipped: Int, dailyCompletedNow: Boolean) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     quizViewModel: QuizViewModel = appViewModel { QuizViewModel(it) }
 ) {
-    var navigated by remember { mutableStateOf(false) }
+    // rememberSaveable: yeniden başlatmada (rotasyon/uiMode) sıfırlanıp
+    // sonuç ekranını ikinci kez eklemesin
+    var navigated by rememberSaveable { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
     val activity = LocalContext.current as Activity
 
@@ -61,7 +64,7 @@ fun QuizScreen(
         if (state is QuizUiState.Finished && !navigated) {
             navigated = true
             val s = state as QuizUiState.Finished
-            onQuizComplete(s.score, s.total, s.bestStreak, s.skipped)
+            onQuizComplete(s.score, s.total, s.bestStreak, s.skipped, s.dailyCompletedNow)
         }
     }
 
@@ -74,7 +77,7 @@ fun QuizScreen(
             text  = { Text("İlerleme kaydedilmeyecek.") },
             confirmButton = {
                 TextButton(onClick = { showExitDialog = false; onBack() }) {
-                    Text("Çık", color = WrongRed)
+                    Text("Çık", color = TriviaTheme.colors.wrong)
                 }
             },
             dismissButton = {
@@ -82,14 +85,14 @@ fun QuizScreen(
                     Text("Devam et")
                 }
             },
-            containerColor = CardDark
+            containerColor = TriviaTheme.colors.card
         )
     }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DeepNavy)
+            .background(TriviaTheme.colors.background)
     ) {
         when (val s = state) {
             is QuizUiState.Loading -> LoadingContent()
@@ -126,9 +129,9 @@ fun QuizScreen(
 private fun LoadingContent() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = ElectricBlue, strokeWidth = 3.dp)
+            CircularProgressIndicator(color = TriviaTheme.colors.accent, strokeWidth = 3.dp)
             Spacer(Modifier.height(16.dp))
-            Text("Sorular yükleniyor...", color = Muted)
+            Text("Sorular yükleniyor...", color = TriviaTheme.colors.textMuted)
         }
     }
 }
@@ -143,13 +146,13 @@ private fun ErrorContent(message: String, onBack: () -> Unit) {
             Spacer(Modifier.height(16.dp))
             Text(
                 text      = message,
-                color     = OnSurface,
+                color     = TriviaTheme.colors.textSecondary,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = onBack,
-                colors  = ButtonDefaults.buttonColors(containerColor = ElectricBlue)
+                colors  = ButtonDefaults.buttonColors(containerColor = TriviaTheme.colors.accent)
             ) {
                 Text("Geri Dön", color = Color.White)
             }
@@ -186,12 +189,12 @@ private fun PlayingContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.Close, contentDescription = "Çıkış", tint = Muted)
+                Icon(Icons.Default.Close, contentDescription = "Çıkış", tint = TriviaTheme.colors.textMuted)
             }
             Spacer(Modifier.weight(1f))
             Text(
                 text      = "${state.currentIndex + 1} / ${state.totalQuestions}",
-                color     = OnSurface,
+                color     = TriviaTheme.colors.textSecondary,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(Modifier.weight(1f))
@@ -200,13 +203,13 @@ private fun PlayingContent(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(WarningOrange.copy(alpha = 0.15f))
-                        .border(1.dp, WarningOrange.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                        .background(TriviaTheme.colors.warning.copy(alpha = 0.15f))
+                        .border(1.dp, TriviaTheme.colors.warning.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text       = "🔥x${state.streak}",
-                        color      = WarningOrange,
+                        color      = TriviaTheme.colors.warning,
                         fontWeight = FontWeight.Bold,
                         fontSize   = 14.sp
                     )
@@ -217,13 +220,13 @@ private fun PlayingContent(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(CardDark)
-                    .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+                    .background(TriviaTheme.colors.card)
+                    .border(1.dp, TriviaTheme.colors.cardBorder, RoundedCornerShape(20.dp))
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 Text(
                     text       = "⭐ ${state.score}",
-                    color      = GoldYellow,
+                    color      = TriviaTheme.colors.gold,
                     fontWeight = FontWeight.Bold,
                     fontSize   = 14.sp
                 )
@@ -241,8 +244,8 @@ private fun PlayingContent(
         LinearProgressIndicator(
             progress           = { progressAnim },
             modifier           = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
-            color              = ElectricBlue,
-            trackColor         = CardDark,
+            color              = TriviaTheme.colors.accent,
+            trackColor         = TriviaTheme.colors.card,
             drawStopIndicator  = {}
         )
 
@@ -255,16 +258,16 @@ private fun PlayingContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                    .background(com.gokcank.triviaquiz.theme.CorrectGreen.copy(alpha = 0.15f))
-                    .border(1.dp, com.gokcank.triviaquiz.theme.CorrectGreen.copy(alpha = 0.4f),
-                        androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(TriviaTheme.colors.correct.copy(alpha = 0.15f))
+                    .border(1.dp, TriviaTheme.colors.correct.copy(alpha = 0.4f),
+                        RoundedCornerShape(8.dp))
                     .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "∞  Süresiz Mod",
-                    color = com.gokcank.triviaquiz.theme.CorrectGreen,
+                    color = TriviaTheme.colors.correct,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 13.sp
                 )
@@ -350,9 +353,9 @@ private fun TimerBar(timeLeft: Int, totalTime: Int) {
 
     // Renk: yeşil → sarı → kırmızı
     val barColor = when {
-        fraction > 0.6f -> lerp(WarningOrange, TimerGreen, (fraction - 0.6f) / 0.4f)
-        fraction > 0.3f -> lerp(WrongRed, WarningOrange, (fraction - 0.3f) / 0.3f)
-        else            -> WrongRed
+        fraction > 0.6f -> lerp(TriviaTheme.colors.warning, TriviaTheme.colors.timerOk, (fraction - 0.6f) / 0.4f)
+        fraction > 0.3f -> lerp(TriviaTheme.colors.wrong, TriviaTheme.colors.warning, (fraction - 0.3f) / 0.3f)
+        else            -> TriviaTheme.colors.wrong
     }
 
     val animFraction by animateFloatAsState(
@@ -371,7 +374,7 @@ private fun TimerBar(timeLeft: Int, totalTime: Int) {
                 .weight(1f)
                 .height(8.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(CardDark)
+                .background(TriviaTheme.colors.card)
         ) {
             Box(
                 modifier = Modifier
@@ -402,17 +405,17 @@ private fun QuestionCard(text: String) {
             .clip(RoundedCornerShape(20.dp))
             .background(
                 Brush.linearGradient(
-                    colors = listOf(NavyMid, CardDark)
+                    colors = listOf(TriviaTheme.colors.surface, TriviaTheme.colors.card)
                 )
             )
-            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+            .border(1.dp, TriviaTheme.colors.cardBorder, RoundedCornerShape(20.dp))
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text      = text,
             style     = MaterialTheme.typography.titleLarge,
-            color     = OnBackground,
+            color     = TriviaTheme.colors.textPrimary,
             textAlign = TextAlign.Center,
             lineHeight = 28.sp
         )
@@ -433,14 +436,14 @@ private fun JokerButton(
 ) {
     val isClickable   = enabled || rewardedMode
     val borderColor   = when {
-        rewardedMode -> WarningOrange.copy(alpha = 0.6f)
-        enabled      -> ElectricPurple.copy(alpha = 0.6f)
-        else         -> CardBorder
+        rewardedMode -> TriviaTheme.colors.warning.copy(alpha = 0.6f)
+        enabled      -> TriviaTheme.colors.accentAlt.copy(alpha = 0.6f)
+        else         -> TriviaTheme.colors.cardBorder
     }
     val labelColor    = when {
-        rewardedMode -> WarningOrange
-        enabled      -> ElectricPurple
-        else         -> Muted
+        rewardedMode -> TriviaTheme.colors.warning
+        enabled      -> TriviaTheme.colors.accentAlt
+        else         -> TriviaTheme.colors.textMuted
     }
     val displayLabel  = if (rewardedMode) "📺 $label" else label
     val displayCount  = if (rewardedMode) "+1" else "×$count"
@@ -449,7 +452,7 @@ private fun JokerButton(
         modifier = modifier
             .alpha(if (isClickable) 1f else 0.35f)
             .clip(RoundedCornerShape(10.dp))
-            .background(CardDark)
+            .background(TriviaTheme.colors.card)
             .border(1.dp, borderColor, RoundedCornerShape(10.dp))
             .clickable(
                 enabled           = isClickable,
@@ -469,7 +472,7 @@ private fun JokerButton(
         Spacer(Modifier.width(6.dp))
         Text(
             text       = displayCount,
-            color      = Muted,
+            color      = TriviaTheme.colors.textMuted,
             fontWeight = FontWeight.SemiBold,
             fontSize   = 11.sp
         )
@@ -492,22 +495,22 @@ private fun AnswerButton(
     onClick: () -> Unit
 ) {
     val targetBg = when {
-        isRevealed && isCorrect                 -> CorrectGreen.copy(alpha = 0.25f)
-        isRevealed && isSelected && !isCorrect  -> WrongRed.copy(alpha = 0.25f)
-        isSelected                              -> ElectricBlue.copy(alpha = 0.2f)
-        else                                    -> CardDark
+        isRevealed && isCorrect                 -> TriviaTheme.colors.correct.copy(alpha = 0.25f)
+        isRevealed && isSelected && !isCorrect  -> TriviaTheme.colors.wrong.copy(alpha = 0.25f)
+        isSelected                              -> TriviaTheme.colors.accent.copy(alpha = 0.2f)
+        else                                    -> TriviaTheme.colors.card
     }
     val targetBorder = when {
-        isRevealed && isCorrect                 -> CorrectGreen
-        isRevealed && isSelected && !isCorrect  -> WrongRed
-        isSelected                              -> ElectricBlue
-        else                                    -> CardBorder
+        isRevealed && isCorrect                 -> TriviaTheme.colors.correct
+        isRevealed && isSelected && !isCorrect  -> TriviaTheme.colors.wrong
+        isSelected                              -> TriviaTheme.colors.accent
+        else                                    -> TriviaTheme.colors.cardBorder
     }
     val textColor = when {
-        isRevealed && isCorrect                 -> CorrectGreen
-        isRevealed && isSelected && !isCorrect  -> WrongRed
-        isSelected                              -> ElectricBlue
-        else                                    -> OnBackground
+        isRevealed && isCorrect                 -> TriviaTheme.colors.correct
+        isRevealed && isSelected && !isCorrect  -> TriviaTheme.colors.wrong
+        isSelected                              -> TriviaTheme.colors.accent
+        else                                    -> TriviaTheme.colors.textPrimary
     }
 
     val bgColor by animateColorAsState(targetBg,     label = "answerBg")
@@ -564,7 +567,7 @@ private fun AnswerButton(
         if (isRevealed) {
             Text(
                 text = if (isCorrect) "✓" else if (isSelected) "✗" else "",
-                color = if (isCorrect) CorrectGreen else WrongRed,
+                color = if (isCorrect) TriviaTheme.colors.correct else TriviaTheme.colors.wrong,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
             )

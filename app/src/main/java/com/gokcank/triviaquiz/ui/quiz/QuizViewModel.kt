@@ -3,10 +3,13 @@ package com.gokcank.triviaquiz.ui.quiz
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.gokcank.triviaquiz.data.DailyRepository
 import com.gokcank.triviaquiz.data.LocalQuestionRepository
 import com.gokcank.triviaquiz.data.SettingsRepository
 import com.gokcank.triviaquiz.data.StatsRepository
 import com.gokcank.triviaquiz.data.model.LocalQuestion
+import com.gokcank.triviaquiz.games.GameSummary
+import com.gokcank.triviaquiz.games.PlayGamesManager
 import com.gokcank.triviaquiz.util.FeedbackManager
 import com.gokcank.triviaquiz.util.decodeHtml
 import kotlinx.coroutines.Job
@@ -62,7 +65,8 @@ sealed interface QuizUiState {
         val score: Int,
         val total: Int,
         val bestStreak: Int = 0,
-        val skipped: Int = 0
+        val skipped: Int = 0,
+        val dailyCompletedNow: Boolean = false
     ) : QuizUiState
 }
 
@@ -77,12 +81,16 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = LocalQuestionRepository(application)
     private val settingsRepository = SettingsRepository(application)
     private val statsRepository = StatsRepository(application)
+    private val dailyRepository = DailyRepository(application)
     private val feedback = FeedbackManager(application)
 
     private val _state = MutableStateFlow<QuizUiState>(QuizUiState.Loading)
     val state: StateFlow<QuizUiState> = _state.asStateFlow()
 
     private var timerJob: Job? = null
+
+    // Günlük görev ilerlemesi için oyunun zorluğu (Playing state'te tutulmuyor)
+    private var quizDifficulty = ""
 
     private var soundOn = true
     private var vibrationOn = true
@@ -102,7 +110,10 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
                 val timerTotal  = settingsRepository.timerSeconds.first()
-                val jokerRights = if (amount >= 15) 2 else 1
+                // Günlük görev tamamlandıysa o günün oyunlarında tüm jokerler +1
+                val bonus       = if (dailyRepository.isBonusActiveToday()) 1 else 0
+                val jokerRights = (if (amount >= 15) 2 else 1) + bonus
+                quizDifficulty  = difficulty
                 _state.value = QuizUiState.Playing(
                     questions      = raw.map { it.toQuizQuestion() },
                     timed          = timed,
@@ -248,9 +259,22 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             val total = current.questions.size
             val scorePercent = if (total > 0) (current.score * 100) / total else 0
             viewModelScope.launch {
-                statsRepository.recordGame(current.answeredLog, current.bestStreak, scorePercent)
+                val totals = statsRepository.recordGame(current.answeredLog, current.bestStreak, scorePercent)
+                val daily = dailyRepository.onGameFinished(current.answeredLog, quizDifficulty, scorePercent)
+                // Ateşle-unut: girişsiz/çevrimdışıysa sessizce atlanır
+                PlayGamesManager.onGameFinished(
+                    totals = totals,
+                    game   = GameSummary(scorePercent, current.bestStreak, quizDifficulty),
+                    daily  = daily.state
+                )
+                _state.value = QuizUiState.Finished(
+                    score             = current.score,
+                    total             = total,
+                    bestStreak        = current.bestStreak,
+                    skipped           = current.skippedCount,
+                    dailyCompletedNow = daily.completedNow
+                )
             }
-            _state.value = QuizUiState.Finished(current.score, total, current.bestStreak, current.skippedCount)
         } else {
             _state.update { s ->
                 (s as QuizUiState.Playing).copy(

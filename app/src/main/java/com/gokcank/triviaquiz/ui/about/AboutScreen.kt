@@ -23,11 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gokcank.triviaquiz.BuildConfig
-import com.gokcank.triviaquiz.theme.DeepNavy
-import com.gokcank.triviaquiz.theme.ElectricBlue
-import com.gokcank.triviaquiz.theme.Muted
-import com.gokcank.triviaquiz.theme.OnBackground
-import com.gokcank.triviaquiz.theme.OnSurface
+import com.gokcank.triviaquiz.theme.TriviaTheme
 import com.gokcank.triviaquiz.ui.components.SectionCard
 
 @Composable
@@ -40,7 +36,7 @@ fun AboutScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DeepNavy)
+            .background(TriviaTheme.colors.background)
     ) {
         Column(
             modifier = Modifier
@@ -55,7 +51,7 @@ fun AboutScreen(
             // ── Üst Bar: Kapat ───────────────────────────────────────────
             Row(Modifier.fillMaxWidth()) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = Muted)
+                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = TriviaTheme.colors.textMuted)
                 }
             }
 
@@ -67,11 +63,11 @@ fun AboutScreen(
             Text(
                 text  = "TriviaQuiz",
                 style = MaterialTheme.typography.displayLarge,
-                color = ElectricBlue
+                color = TriviaTheme.colors.accent
             )
             Text(
-                text     = "Sürüm ${BuildConfig.VERSION_NAME}",
-                color    = Muted,
+                text     = "Sürüm v${BuildConfig.VERSION_NAME} — Kapalı Beta",
+                color    = TriviaTheme.colors.textMuted,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
@@ -86,7 +82,7 @@ fun AboutScreen(
 
             Text(
                 text      = "Bilgini sına, kendini geliştir! 🚀",
-                color     = OnSurface,
+                color     = TriviaTheme.colors.textSecondary,
                 fontSize  = 14.sp,
                 textAlign = TextAlign.Center
             )
@@ -98,19 +94,19 @@ fun AboutScreen(
                     context.startActivity(Intent(Intent.ACTION_VIEW,
                         Uri.parse("https://gokcank.vercel.app/")))
                 }) {
-                    Text("Web", color = ElectricBlue, fontSize = 13.sp)
+                    Text("Web", color = TriviaTheme.colors.accent, fontSize = 13.sp)
                 }
                 TextButton(onClick = {
                     context.startActivity(Intent(Intent.ACTION_VIEW,
                         Uri.parse("https://github.com/gokcank")))
                 }) {
-                    Text("GitHub", color = ElectricBlue, fontSize = 13.sp)
+                    Text("GitHub", color = TriviaTheme.colors.accent, fontSize = 13.sp)
                 }
                 TextButton(onClick = {
                     context.startActivity(Intent(Intent.ACTION_VIEW,
                         Uri.parse("https://raw.githubusercontent.com/gokcank/TriviaQuiz/refs/heads/master/PRIVACY_POLICY.md")))
                 }) {
-                    Text("Gizlilik", color = ElectricBlue, fontSize = 13.sp)
+                    Text("Gizlilik", color = TriviaTheme.colors.accent, fontSize = 13.sp)
                 }
             }
 
@@ -131,11 +127,11 @@ private fun InfoRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment     = Alignment.CenterVertically
     ) {
-        Text(text = label, color = Muted, fontSize = 14.sp)
+        Text(text = label, color = TriviaTheme.colors.textMuted, fontSize = 14.sp)
         Spacer(Modifier.width(16.dp))
         Text(
             text       = value,
-            color      = OnBackground,
+            color      = TriviaTheme.colors.textPrimary,
             fontSize   = 14.sp,
             fontWeight = FontWeight.Medium,
             textAlign  = TextAlign.End,

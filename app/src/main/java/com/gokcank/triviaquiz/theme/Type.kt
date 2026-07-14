@@ -28,61 +28,62 @@ private val InterFont = FontFamily(
     Font(GoogleFont("Inter"), provider, FontWeight.SemiBold),
 )
 
-val TriviaTypography = Typography(
+/** Tipografi, metin renklerini aktif paletten alır (stiliyle renk alan Text'ler için) */
+fun triviaTypography(colors: TriviaColors) = Typography(
     displayLarge = TextStyle(
         fontFamily = OutfitFont,
         fontWeight = FontWeight.ExtraBold,
         fontSize   = 40.sp,
-        color      = OnBackground
+        color      = colors.textPrimary
     ),
     headlineLarge = TextStyle(
         fontFamily = OutfitFont,
         fontWeight = FontWeight.Bold,
         fontSize   = 32.sp,
-        color      = OnBackground
+        color      = colors.textPrimary
     ),
     headlineMedium = TextStyle(
         fontFamily = OutfitFont,
         fontWeight = FontWeight.Bold,
         fontSize   = 24.sp,
-        color      = OnBackground
+        color      = colors.textPrimary
     ),
     titleLarge = TextStyle(
         fontFamily = OutfitFont,
         fontWeight = FontWeight.SemiBold,
         fontSize   = 20.sp,
-        color      = OnBackground
+        color      = colors.textPrimary
     ),
     titleMedium = TextStyle(
         fontFamily = InterFont,
         fontWeight = FontWeight.Medium,
         fontSize   = 16.sp,
-        color      = OnSurface
+        color      = colors.textSecondary
     ),
     bodyLarge = TextStyle(
         fontFamily = InterFont,
         fontWeight = FontWeight.Normal,
         fontSize   = 16.sp,
-        color      = OnBackground
+        color      = colors.textPrimary
     ),
     bodyMedium = TextStyle(
         fontFamily = InterFont,
         fontWeight = FontWeight.Normal,
         fontSize   = 14.sp,
-        color      = OnSurface
+        color      = colors.textSecondary
     ),
     labelLarge = TextStyle(
         fontFamily = InterFont,
         fontWeight = FontWeight.SemiBold,
         fontSize   = 14.sp,
-        color      = OnBackground,
+        color      = colors.textPrimary,
         letterSpacing = 0.5.sp
     ),
     labelSmall = TextStyle(
         fontFamily = InterFont,
         fontWeight = FontWeight.Medium,
         fontSize   = 11.sp,
-        color      = Muted,
+        color      = colors.textMuted,
         letterSpacing = 1.sp
     )
 )
