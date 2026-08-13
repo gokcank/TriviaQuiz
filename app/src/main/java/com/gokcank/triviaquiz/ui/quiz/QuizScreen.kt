@@ -2,6 +2,7 @@ package com.gokcank.triviaquiz.ui.quiz
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -51,7 +52,7 @@ fun QuizScreen(
     // sonuç ekranını ikinci kez eklemesin
     var navigated by rememberSaveable { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
-    val activity = LocalContext.current as Activity
+    val activity = LocalActivity.current
 
     LaunchedEffect(Unit) {
         val cat = if (categoryName == "Tüm Kategoriler") null else categoryName
@@ -104,12 +105,14 @@ fun QuizScreen(
                 onExtraTime  = { quizViewModel.useExtraTime() },
                 onSkip       = { quizViewModel.useSkip() },
                 onRewardedJoker = { jokerType ->
-                    quizViewModel.pauseTimer()
-                    RewardedAdManager.show(
-                        activity = activity,
-                        onReward = { quizViewModel.grantExtraJoker(jokerType) },
-                        onClosed = { quizViewModel.resumeTimer() }
-                    )
+                    activity?.let { act ->
+                        quizViewModel.pauseTimer()
+                        RewardedAdManager.show(
+                            activity = act,
+                            onReward = { quizViewModel.grantExtraJoker(jokerType) },
+                            onClosed = { quizViewModel.resumeTimer() }
+                        )
+                    }
                 },
                 onBack = { showExitDialog = true }
             )
@@ -314,14 +317,14 @@ private fun PlayingContent(
 
         // ── Soru Kartı ───────────────────────────────────────────────────
         AnimatedContent(
-            targetState = state.currentIndex,
+            targetState = q,
             transitionSpec = {
                 slideInHorizontally { it } + fadeIn() togetherWith
                         slideOutHorizontally { -it } + fadeOut()
             },
             label = "questionTransition"
-        ) { _ ->
-            QuestionCard(text = q.question)
+        ) { targetQ ->
+            QuestionCard(text = targetQ.question)
         }
 
         Spacer(Modifier.height(24.dp))

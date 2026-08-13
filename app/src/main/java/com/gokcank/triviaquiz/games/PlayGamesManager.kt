@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.lang.ref.WeakReference
 
 /** Oyun bitiminde başarım kontrolü için gereken oyun özeti */
 data class GameSummary(val scorePercent: Int, val bestStreak: Int, val difficulty: String)
@@ -38,14 +39,14 @@ object PlayGamesManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    // Tek activity'li uygulama: MainActivity her onCreate'te init ile günceller
-    private var activity: Activity? = null
+    // Tek activity'li uygulama: MainActivity her onCreate'te init ile günceller (WeakReference sızıntıyı önler)
+    private var activityRef: WeakReference<Activity>? = null
     private var totalsSynced = false
 
     /** MainActivity.onCreate'ten çağrılır; auth olduysa geçmişi bir kez aktarır */
     fun init(activity: Activity) {
         if (!enabled) return
-        this.activity = activity
+        this.activityRef = WeakReference(activity)
         scope.launch {
             runCatching {
                 val result = PlayGames.getGamesSignInClient(activity).isAuthenticated().await()
@@ -57,7 +58,7 @@ object PlayGamesManager {
 
     /** İstatistik ekranındaki elle giriş düğmesi */
     fun signIn() {
-        val act = activity ?: return
+        val act = activityRef?.get() ?: return
         if (!enabled) return
         scope.launch {
             runCatching {
@@ -70,7 +71,7 @@ object PlayGamesManager {
 
     /** Başarımlar ekranı intent'i — hata/girişsizlik durumunda null */
     suspend fun achievementsIntent(): Intent? {
-        val act = activity ?: return null
+        val act = activityRef?.get() ?: return null
         if (!enabled || !_isAuthenticated.value) return null
         return runCatching {
             PlayGames.getAchievementsClient(act).achievementsIntent.await()
@@ -79,7 +80,7 @@ object PlayGamesManager {
 
     /** Liderlik tabloları ekranı intent'i — hata/girişsizlik durumunda null */
     suspend fun allLeaderboardsIntent(): Intent? {
-        val act = activity ?: return null
+        val act = activityRef?.get() ?: return null
         if (!enabled || !_isAuthenticated.value) return null
         return runCatching {
             PlayGames.getLeaderboardsClient(act).allLeaderboardsIntent.await()
@@ -88,7 +89,7 @@ object PlayGamesManager {
 
     /** Oyun bitiminde çağrılır — ateşle-unut */
     fun onGameFinished(totals: GameStats, game: GameSummary, daily: DailyState) {
-        val act = activity ?: return
+        val act = activityRef?.get() ?: return
         if (!enabled || !_isAuthenticated.value) return
         scope.launch {
             runCatching {

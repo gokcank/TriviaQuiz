@@ -2,6 +2,7 @@ package com.gokcank.triviaquiz.ui.main
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -49,7 +50,7 @@ fun MainScreen(
     modifier: Modifier = Modifier,
     dailyViewModel: DailyViewModel = appViewModel { DailyViewModel(it) }
 ) {
-    val activity = LocalContext.current as Activity
+    val activity = LocalActivity.current
     var showQuitDialog    by remember { mutableStateOf(false) }
     var selectedCategory  by remember { mutableStateOf(CATEGORIES[0]) }
     var selectedDifficulty by remember { mutableStateOf("easy") }
@@ -72,7 +73,7 @@ fun MainScreen(
             onDismissRequest = { showQuitDialog = false },
             title = { Text("Uygulamadan çık?") },
             confirmButton = {
-                TextButton(onClick = { activity.finish() }) {
+                TextButton(onClick = { activity?.finish() }) {
                     Text("Çık", color = MaterialTheme.colorScheme.error)
                 }
             },

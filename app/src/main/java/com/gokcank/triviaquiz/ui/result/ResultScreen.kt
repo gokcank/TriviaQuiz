@@ -2,6 +2,7 @@ package com.gokcank.triviaquiz.ui.result
 
 import android.app.Activity
 import android.content.Intent
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -41,9 +42,9 @@ fun ResultScreen(
     val wrong = total - score - skipped
 
     // Her sonuç ekranı açılışında interstitial sayacını artır / göster
-    val activity = LocalContext.current as Activity
+    val activity = LocalActivity.current
     LaunchedEffect(Unit) {
-        InterstitialAdManager.onGameFinished(activity)
+        activity?.let { InterstitialAdManager.onGameFinished(it) }
     }
 
     // Sonuç notu & emoji
