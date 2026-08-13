@@ -4,9 +4,15 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.gokcank.triviaquiz.data.DailyRepository
+import com.gokcank.triviaquiz.data.FavoriteQuestion
+import com.gokcank.triviaquiz.data.FavoritesRepository
 import com.gokcank.triviaquiz.data.LocalQuestionRepository
 import com.gokcank.triviaquiz.data.SettingsRepository
 import com.gokcank.triviaquiz.data.StatsRepository
+import com.gokcank.triviaquiz.data.XP_DAILY_MISSION_BONUS
+import com.gokcank.triviaquiz.data.XP_PERFECT_GAME_BONUS
+import com.gokcank.triviaquiz.data.XP_PER_CORRECT_ANSWER
+import com.gokcank.triviaquiz.data.XpRepository
 import com.gokcank.triviaquiz.data.model.LocalQuestion
 import com.gokcank.triviaquiz.games.GameSummary
 import com.gokcank.triviaquiz.games.PlayGamesManager
@@ -20,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 // ── Model ──────────────────────────────────────────────────────────────────────
 
@@ -29,6 +36,18 @@ data class QuizQuestion(
     val question: String,
     val shuffledAnswers: List<String>,
     val correctAnswer: String,
+    val category: String,
+    val difficulty: String
+)
+
+@Serializable
+data class AnswerRecord(
+    val question: String,
+    val selectedAnswer: String?,
+    val correctAnswer: String,
+    val shuffledAnswers: List<String>,
+    val isCorrect: Boolean,
+    val isSkipped: Boolean,
     val category: String,
     val difficulty: String
 )
@@ -55,7 +74,11 @@ sealed interface QuizUiState {
         val skippedCount: Int = 0,
         val removedAnswers: List<String> = emptyList(),
         // İstatistik: soru kategorisi → doğru mu (Geç'ilenler loglanmaz)
-        val answeredLog: List<Pair<String, Boolean>> = emptyList()
+        val answeredLog: List<Pair<String, Boolean>> = emptyList(),
+        // Detaylı cevap kayıtları (Sonuç ekranında inceleme için)
+        val records: List<AnswerRecord> = emptyList(),
+        // Mevcut sorunun favori durumu
+        val isCurrentFavorite: Boolean = false
     ) : QuizUiState {
         val currentQuestion: QuizQuestion get() = questions[currentIndex]
         val totalQuestions: Int get() = questions.size
@@ -66,7 +89,11 @@ sealed interface QuizUiState {
         val total: Int,
         val bestStreak: Int = 0,
         val skipped: Int = 0,
-        val dailyCompletedNow: Boolean = false
+        val dailyCompletedNow: Boolean = false,
+        val records: List<AnswerRecord> = emptyList(),
+        val gainedXp: Int = 0,
+        val leveledUp: Boolean = false,
+        val newLevel: Int = 1
     ) : QuizUiState
 }
 
@@ -82,12 +109,15 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsRepository = SettingsRepository(application)
     private val statsRepository = StatsRepository(application)
     private val dailyRepository = DailyRepository(application)
+    private val favoritesRepository = FavoritesRepository(application)
+    private val xpRepository = XpRepository(application)
     private val feedback = FeedbackManager(application)
 
     private val _state = MutableStateFlow<QuizUiState>(QuizUiState.Loading)
     val state: StateFlow<QuizUiState> = _state.asStateFlow()
 
     private var timerJob: Job? = null
+    private var favCheckJob: Job? = null
 
     // Günlük görev ilerlemesi için oyunun zorluğu (Playing state'te tutulmuyor)
     private var quizDifficulty = ""
@@ -114,8 +144,9 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                 val bonus       = if (dailyRepository.isBonusActiveToday()) 1 else 0
                 val jokerRights = (if (amount >= 15) 2 else 1) + bonus
                 quizDifficulty  = difficulty
+                val quizQuestions = raw.map { it.toQuizQuestion() }
                 _state.value = QuizUiState.Playing(
-                    questions      = raw.map { it.toQuizQuestion() },
+                    questions      = quizQuestions,
                     timed          = timed,
                     timeLeft       = timerTotal,
                     timerTotal     = timerTotal,
@@ -123,6 +154,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                     extraTimeLeft  = jokerRights,
                     skipLeft       = jokerRights
                 )
+                observeFavoriteFor(quizQuestions[0].question)
                 if (timed) startTimer()
             } catch (e: Exception) {
                 _state.value = QuizUiState.Error(e.message ?: "Sorular yüklenemedi.")
@@ -146,6 +178,17 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val newStreak = if (isCorrect) current.streak + 1 else 0
+        val record = AnswerRecord(
+            question        = current.currentQuestion.question,
+            selectedAnswer  = answer,
+            correctAnswer   = current.currentQuestion.correctAnswer,
+            shuffledAnswers = current.currentQuestion.shuffledAnswers,
+            isCorrect       = isCorrect,
+            isSkipped       = false,
+            category        = current.currentQuestion.category,
+            difficulty      = current.currentQuestion.difficulty
+        )
+
         _state.update { s ->
             (s as QuizUiState.Playing).copy(
                 selectedAnswer   = answer,
@@ -153,7 +196,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                 score            = if (isCorrect) s.score + 1 else s.score,
                 streak           = newStreak,
                 bestStreak       = maxOf(s.bestStreak, newStreak),
-                answeredLog      = s.answeredLog + (s.currentQuestion.category to isCorrect)
+                answeredLog      = s.answeredLog + (s.currentQuestion.category to isCorrect),
+                records          = s.records + record
             )
         }
 
@@ -170,17 +214,60 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         if (soundOn) feedback.playTimeout()
         if (vibrationOn) feedback.vibrate(250)
 
+        val record = AnswerRecord(
+            question        = current.currentQuestion.question,
+            selectedAnswer  = null,
+            correctAnswer   = current.currentQuestion.correctAnswer,
+            shuffledAnswers = current.currentQuestion.shuffledAnswers,
+            isCorrect       = false,
+            isSkipped       = false,
+            category        = current.currentQuestion.category,
+            difficulty      = current.currentQuestion.difficulty
+        )
+
         _state.update { s ->
             (s as QuizUiState.Playing).copy(
                 isAnswerRevealed = true,
                 timeLeft         = 0,
                 streak           = 0,
-                answeredLog      = s.answeredLog + (s.currentQuestion.category to false)
+                answeredLog      = s.answeredLog + (s.currentQuestion.category to false),
+                records          = s.records + record
             )
         }
         viewModelScope.launch {
             delay(REVEAL_DELAY_MS)
             moveToNext()
+        }
+    }
+
+    // ── Favori İşlemleri ──────────────────────────────────────────────────────
+
+    fun toggleFavoriteCurrentQuestion() {
+        val current = _state.value as? QuizUiState.Playing ?: return
+        val q = current.currentQuestion
+        viewModelScope.launch {
+            favoritesRepository.toggleFavorite(
+                FavoriteQuestion(
+                    question         = q.question,
+                    correctAnswer    = q.correctAnswer,
+                    incorrectAnswers = q.shuffledAnswers.filter { it != q.correctAnswer },
+                    category         = q.category,
+                    difficulty       = q.difficulty
+                )
+            )
+        }
+    }
+
+    private fun observeFavoriteFor(questionText: String) {
+        favCheckJob?.cancel()
+        favCheckJob = viewModelScope.launch {
+            favoritesRepository.isFavorite(questionText).collect { isFav ->
+                _state.update { s ->
+                    if (s is QuizUiState.Playing && s.currentQuestion.question == questionText) {
+                        s.copy(isCurrentFavorite = isFav)
+                    } else s
+                }
+            }
         }
     }
 
@@ -242,10 +329,22 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         if (current.skipLeft <= 0 || current.isAnswerRevealed) return
 
         timerJob?.cancel()
+        val record = AnswerRecord(
+            question        = current.currentQuestion.question,
+            selectedAnswer  = null,
+            correctAnswer   = current.currentQuestion.correctAnswer,
+            shuffledAnswers = current.currentQuestion.shuffledAnswers,
+            isCorrect       = false,
+            isSkipped       = true,
+            category        = current.currentQuestion.category,
+            difficulty      = current.currentQuestion.difficulty
+        )
+
         _state.update { s ->
             (s as QuizUiState.Playing).copy(
                 skipLeft     = s.skipLeft - 1,
-                skippedCount = s.skippedCount + 1
+                skippedCount = s.skippedCount + 1,
+                records      = s.records + record
             )
         }
         moveToNext()
@@ -261,6 +360,14 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch {
                 val totals = statsRepository.recordGame(current.answeredLog, current.bestStreak, scorePercent)
                 val daily = dailyRepository.onGameFinished(current.answeredLog, quizDifficulty, scorePercent)
+                
+                // XP Hesabı: Doğru cevaplar + %100 başarı bonusu + günlük görev bonusu
+                val xpFromAnswers = current.score * XP_PER_CORRECT_ANSWER
+                val xpFromPerfect = if (scorePercent >= 100) XP_PERFECT_GAME_BONUS else 0
+                val xpFromDaily = if (daily.completedNow) XP_DAILY_MISSION_BONUS else 0
+                val totalXpGained = xpFromAnswers + xpFromPerfect + xpFromDaily
+                val xpGainResult = xpRepository.addXp(totalXpGained)
+
                 // Ateşle-unut: girişsiz/çevrimdışıysa sessizce atlanır
                 PlayGamesManager.onGameFinished(
                     totals = totals,
@@ -272,19 +379,26 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                     total             = total,
                     bestStreak        = current.bestStreak,
                     skipped           = current.skippedCount,
-                    dailyCompletedNow = daily.completedNow
+                    dailyCompletedNow = daily.completedNow,
+                    records           = current.records,
+                    gainedXp          = totalXpGained,
+                    leveledUp         = xpGainResult.leveledUp,
+                    newLevel          = xpGainResult.newLevel
                 )
             }
         } else {
+            val nextIndex = current.currentIndex + 1
+            val nextQuestion = current.questions[nextIndex]
             _state.update { s ->
                 (s as QuizUiState.Playing).copy(
-                    currentIndex     = current.currentIndex + 1,
+                    currentIndex     = nextIndex,
                     selectedAnswer   = null,
                     isAnswerRevealed = false,
                     timeLeft         = current.timerTotal,
                     removedAnswers   = emptyList()
                 )
             }
+            observeFavoriteFor(nextQuestion.question)
             if ((_state.value as? QuizUiState.Playing)?.timed == true) startTimer()
         }
     }
@@ -315,6 +429,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
+        favCheckJob?.cancel()
         feedback.release()
     }
 }

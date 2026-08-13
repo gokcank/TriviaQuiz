@@ -76,6 +76,53 @@ fun StatsScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // ── Seviye & XP ──────────────────────────────────────────────
+            val playerLevel by statsViewModel.playerLevel.collectAsStateWithLifecycle()
+            SectionCard(title = "OYUNCU SEVİYESİ") {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = playerLevel.emoji, fontSize = 28.sp)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Seviye ${playerLevel.level} · ${playerLevel.title}",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = TriviaTheme.colors.textPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Toplam ${playerLevel.totalXp} XP",
+                                color = TriviaTheme.colors.textMuted,
+                                fontSize = 13.sp
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            text = "${playerLevel.currentLevelXp} / ${playerLevel.requiredXpForLevel} XP",
+                            color = TriviaTheme.colors.accent,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    androidx.compose.material3.LinearProgressIndicator(
+                        progress = { playerLevel.progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = TriviaTheme.colors.accent,
+                        trackColor = TriviaTheme.colors.cardBorder.copy(alpha = 0.5f),
+                        drawStopIndicator = {}
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
             // ── Play Games ───────────────────────────────────────────────
             if (PlayGamesManager.enabled) {
                 val isAuthenticated by PlayGamesManager.isAuthenticated.collectAsStateWithLifecycle()

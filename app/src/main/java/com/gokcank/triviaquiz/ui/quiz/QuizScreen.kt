@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,7 +44,17 @@ fun QuizScreen(
     difficulty: String,
     amount: Int,
     timed: Boolean,
-    onQuizComplete: (score: Int, total: Int, bestStreak: Int, skipped: Int, dailyCompletedNow: Boolean) -> Unit,
+    onQuizComplete: (
+        score: Int,
+        total: Int,
+        bestStreak: Int,
+        skipped: Int,
+        dailyCompletedNow: Boolean,
+        gainedXp: Int,
+        leveledUp: Boolean,
+        newLevel: Int,
+        records: List<AnswerRecord>
+    ) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     quizViewModel: QuizViewModel = appViewModel { QuizViewModel(it) }
@@ -65,7 +76,17 @@ fun QuizScreen(
         if (state is QuizUiState.Finished && !navigated) {
             navigated = true
             val s = state as QuizUiState.Finished
-            onQuizComplete(s.score, s.total, s.bestStreak, s.skipped, s.dailyCompletedNow)
+            onQuizComplete(
+                s.score,
+                s.total,
+                s.bestStreak,
+                s.skipped,
+                s.dailyCompletedNow,
+                s.gainedXp,
+                s.leveledUp,
+                s.newLevel,
+                s.records
+            )
         }
     }
 
@@ -99,12 +120,13 @@ fun QuizScreen(
             is QuizUiState.Loading -> LoadingContent()
             is QuizUiState.Error   -> ErrorContent(message = s.message, onBack = onBack)
             is QuizUiState.Playing -> PlayingContent(
-                state        = s,
-                onAnswer     = { quizViewModel.onAnswerSelected(it) },
-                onFiftyFifty = { quizViewModel.useFiftyFifty() },
-                onExtraTime  = { quizViewModel.useExtraTime() },
-                onSkip       = { quizViewModel.useSkip() },
-                onRewardedJoker = { jokerType ->
+                state            = s,
+                onAnswer         = { quizViewModel.onAnswerSelected(it) },
+                onToggleFavorite = { quizViewModel.toggleFavoriteCurrentQuestion() },
+                onFiftyFifty     = { quizViewModel.useFiftyFifty() },
+                onExtraTime      = { quizViewModel.useExtraTime() },
+                onSkip           = { quizViewModel.useSkip() },
+                onRewardedJoker  = { jokerType ->
                     activity?.let { act ->
                         quizViewModel.pauseTimer()
                         RewardedAdManager.show(
@@ -169,6 +191,7 @@ private fun ErrorContent(message: String, onBack: () -> Unit) {
 private fun PlayingContent(
     state: QuizUiState.Playing,
     onAnswer: (String) -> Unit,
+    onToggleFavorite: () -> Unit,
     onFiftyFifty: () -> Unit,
     onExtraTime: () -> Unit,
     onSkip: () -> Unit,
@@ -186,7 +209,7 @@ private fun PlayingContent(
     ) {
         Spacer(Modifier.height(20.dp))
 
-        // ── Üst Bar: Geri + İlerleme + Puan ─────────────────────────────
+        // ── Üst Bar: Geri + İlerleme + Favori + Puan ─────────────────────
         Row(
             Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -201,6 +224,15 @@ private fun PlayingContent(
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(Modifier.weight(1f))
+            // Favori Butonu
+            IconButton(onClick = onToggleFavorite, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = if (state.isCurrentFavorite) "Favorilerden Çıkar" else "Favorilere Ekle",
+                    tint = if (state.isCurrentFavorite) TriviaTheme.colors.gold else TriviaTheme.colors.textMuted.copy(alpha = 0.35f)
+                )
+            }
+            Spacer(Modifier.width(4.dp))
             // Seri rozeti
             if (state.streak >= 2) {
                 Box(
@@ -217,7 +249,7 @@ private fun PlayingContent(
                         fontSize   = 14.sp
                     )
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(6.dp))
             }
             // Puan rozeti
             Box(
@@ -228,8 +260,8 @@ private fun PlayingContent(
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text       = "⭐ ${state.score}",
-                    color      = TriviaTheme.colors.gold,
+                    text       = "🎯 ${state.score}",
+                    color      = TriviaTheme.colors.accent,
                     fontWeight = FontWeight.Bold,
                     fontSize   = 14.sp
                 )

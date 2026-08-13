@@ -9,6 +9,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.gokcank.triviaquiz.ui.about.AboutScreen
+import com.gokcank.triviaquiz.ui.favorites.FavoritesScreen
 import com.gokcank.triviaquiz.ui.main.MainScreen
 import com.gokcank.triviaquiz.ui.quiz.QuizScreen
 import com.gokcank.triviaquiz.ui.result.ResultScreen
@@ -33,11 +34,19 @@ fun MainNavigation() {
 
             entry<Home> {
                 MainScreen(
-                    onStartQuiz    = { quiz -> backStack.add(quiz) },
-                    onOpenStats    = { backStack.add(Stats) },
-                    onOpenSettings = { backStack.add(Settings) },
-                    onOpenAbout    = { backStack.add(About) },
-                    modifier       = Modifier.fillMaxSize()
+                    onStartQuiz     = { quiz -> backStack.add(quiz) },
+                    onOpenStats     = { backStack.add(Stats) },
+                    onOpenFavorites = { backStack.add(Favorites) },
+                    onOpenSettings  = { backStack.add(Settings) },
+                    onOpenAbout     = { backStack.add(About) },
+                    modifier        = Modifier.fillMaxSize()
+                )
+            }
+
+            entry<Favorites> {
+                FavoritesScreen(
+                    onBack   = { backStack.removeLastOrNull() },
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
@@ -68,7 +77,7 @@ fun MainNavigation() {
                     difficulty     = key.difficulty,
                     amount         = key.amount,
                     timed          = key.timed,
-                    onQuizComplete = { score, total, bestStreak, skipped, dailyCompletedNow ->
+                    onQuizComplete = { score, total, bestStreak, skipped, dailyCompletedNow, gainedXp, leveledUp, newLevel, records ->
                         backStack.add(
                             Result(
                                 score             = score,
@@ -79,7 +88,11 @@ fun MainNavigation() {
                                 amount            = key.amount,
                                 bestStreak        = bestStreak,
                                 skipped           = skipped,
-                                dailyCompletedNow = dailyCompletedNow
+                                dailyCompletedNow = dailyCompletedNow,
+                                gainedXp          = gainedXp,
+                                leveledUp         = leveledUp,
+                                newLevel          = newLevel,
+                                records           = records
                             )
                         )
                     },
@@ -90,15 +103,19 @@ fun MainNavigation() {
 
             entry<Result> { key ->
                 ResultScreen(
-                    score        = key.score,
-                    total        = key.total,
-                    categoryName = key.categoryName,
-                    difficulty   = key.difficulty,
-                    timed        = key.timed,
-                    bestStreak   = key.bestStreak,
-                    skipped      = key.skipped,
+                    score             = key.score,
+                    total             = key.total,
+                    categoryName      = key.categoryName,
+                    difficulty        = key.difficulty,
+                    timed             = key.timed,
+                    bestStreak        = key.bestStreak,
+                    skipped           = key.skipped,
                     dailyCompletedNow = key.dailyCompletedNow,
-                    onPlayAgain  = {
+                    gainedXp          = key.gainedXp,
+                    leveledUp         = key.leveledUp,
+                    newLevel          = key.newLevel,
+                    records           = key.records,
+                    onPlayAgain       = {
                         val size = backStack.size
                         repeat(size - 1) { backStack.removeLastOrNull() }
                         backStack.add(
@@ -110,7 +127,7 @@ fun MainNavigation() {
                             )
                         )
                     },
-                    onGoHome     = {
+                    onGoHome          = {
                         val size = backStack.size
                         repeat(size - 1) { backStack.removeLastOrNull() }
                     },

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.gokcank.triviaquiz.ads.InterstitialAdManager
 import com.gokcank.triviaquiz.theme.TriviaTheme
 import com.gokcank.triviaquiz.ui.components.StatCard
+import com.gokcank.triviaquiz.ui.quiz.AnswerRecord
 
 @Composable
 fun ResultScreen(
@@ -34,6 +35,10 @@ fun ResultScreen(
     bestStreak: Int = 0,
     skipped: Int = 0,
     dailyCompletedNow: Boolean = false,
+    gainedXp: Int = 0,
+    leveledUp: Boolean = false,
+    newLevel: Int = 1,
+    records: List<AnswerRecord> = emptyList(),
     onPlayAgain: () -> Unit,
     onGoHome: () -> Unit,
     modifier: Modifier = Modifier
@@ -201,7 +206,58 @@ fun ResultScreen(
                 )
             }
 
-            Spacer(Modifier.height(40.dp))
+            // ── XP ve Seviye Kazanımı ────────────────────────────────────
+            if (gainedXp > 0) {
+                Spacer(Modifier.height(16.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = TriviaTheme.colors.accent.copy(alpha = 0.12f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, TriviaTheme.colors.accent.copy(alpha = 0.35f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(text = "✨", fontSize = 16.sp)
+                        Text(
+                            text = "+$gainedXp XP Kazanıldı!",
+                            color = TriviaTheme.colors.accent,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        if (leveledUp) {
+                            Text(
+                                text = "🎉 SEVİYE $newLevel!",
+                                color = TriviaTheme.colors.gold,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            // ── Cevapları İncele Butonu ───────────────────────────────────
+            var showReviewSheet by remember { mutableStateOf(false) }
+            if (records.isNotEmpty()) {
+                OutlinedButton(
+                    onClick  = { showReviewSheet = true },
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    shape    = RoundedCornerShape(16.dp),
+                    border   = androidx.compose.foundation.BorderStroke(1.5.dp, TriviaTheme.colors.accent.copy(alpha = 0.7f)),
+                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = TriviaTheme.colors.accent)
+                ) {
+                    Text(
+                        text       = "📋  Cevapları İncele (${records.size})",
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 15.sp
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+            }
 
             // ── Tekrar Oyna ──────────────────────────────────────────────
             Button(
@@ -277,6 +333,13 @@ fun ResultScreen(
             }
 
             Spacer(Modifier.height(32.dp))
+
+            if (showReviewSheet && records.isNotEmpty()) {
+                AnswerReviewSheet(
+                    records   = records,
+                    onDismiss = { showReviewSheet = false }
+                )
+            }
         }
     }
 }

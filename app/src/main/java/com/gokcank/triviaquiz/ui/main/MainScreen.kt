@@ -7,6 +7,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -45,6 +46,7 @@ import com.gokcank.triviaquiz.util.appViewModel
 fun MainScreen(
     onStartQuiz: (Quiz) -> Unit,
     onOpenStats: () -> Unit,
+    onOpenFavorites: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
     modifier: Modifier = Modifier,
@@ -59,6 +61,7 @@ fun MainScreen(
     var categoryExpanded  by remember { mutableStateOf(false) }
 
     val dailyState by dailyViewModel.daily.collectAsStateWithLifecycle()
+    val playerLevel by dailyViewModel.playerLevel.collectAsStateWithLifecycle()
 
     // Ekrana her dönüşte gün devrini yakala (gece yarısı geçilmiş olabilir)
     LifecycleResumeEffect(Unit) {
@@ -121,7 +124,15 @@ fun MainScreen(
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(20.dp))
+
+            // ── Seviye & XP Kartı ─────────────────────────────────────────
+            PlayerLevelCard(
+                level   = playerLevel,
+                onClick = onOpenStats
+            )
+
+            Spacer(Modifier.height(16.dp))
 
             // ── Günlük Görev ─────────────────────────────────────────────
             dailyState?.let {
@@ -259,13 +270,16 @@ fun MainScreen(
                 .fillMaxWidth()
         )
 
-        // ── Sağ Üst: Ayarlar & Hakkında ──────────────────────────────────
+        // ── Sağ Üst: Favoriler & Ayarlar & Hakkında ─────────────────────
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
                 .padding(top = 4.dp, end = 8.dp)
         ) {
+            IconButton(onClick = onOpenFavorites) {
+                Text(text = "⭐", fontSize = 19.sp)
+            }
             IconButton(onClick = onOpenStats) {
                 Text(text = "📊", fontSize = 19.sp)
             }
@@ -280,6 +294,69 @@ fun MainScreen(
 }
 
 // ── Yardımcı Bileşenler ───────────────────────────────────────────────────────
+
+@Composable
+private fun PlayerLevelCard(
+    level: com.gokcank.triviaquiz.data.PlayerLevel,
+    onClick: () -> Unit
+) {
+    val progressAnim by animateFloatAsState(
+        targetValue = level.progress,
+        animationSpec = androidx.compose.animation.core.tween(600),
+        label = "xpProgress"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(TriviaTheme.colors.card)
+            .border(1.dp, TriviaTheme.colors.cardBorder, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = level.emoji, fontSize = 22.sp)
+                Spacer(Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = "Seviye ${level.level} · ${level.title}",
+                        color = TriviaTheme.colors.textPrimary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                    Text(
+                        text = "Toplam ${level.totalXp} XP",
+                        color = TriviaTheme.colors.textMuted,
+                        fontSize = 12.sp
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "${level.currentLevelXp} / ${level.requiredXpForLevel} XP",
+                    color = TriviaTheme.colors.accent,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+
+            LinearProgressIndicator(
+                progress = { progressAnim },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = TriviaTheme.colors.accent,
+                trackColor = TriviaTheme.colors.cardBorder.copy(alpha = 0.5f),
+                drawStopIndicator = {}
+            )
+        }
+    }
+}
 
 @Composable
 private fun StartButton(onClick: () -> Unit) {
