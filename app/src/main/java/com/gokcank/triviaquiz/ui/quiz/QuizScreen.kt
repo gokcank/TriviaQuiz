@@ -232,10 +232,11 @@ private fun PlayingContent(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .statusBarsPadding()
             .padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(8.dp))
 
         // ── Üst Bar: Geri + İlerleme + Favori + Rapor + Puan ─────────────
         Row(
