@@ -2,6 +2,7 @@ package com.gokcank.triviaquiz.ui.result
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -15,15 +16,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gokcank.triviaquiz.theme.TriviaTheme
 import com.gokcank.triviaquiz.ui.quiz.AnswerRecord
 
-private enum class ReviewFilter(val label: String) {
-    ALL("Tümü"),
-    WRONG("Yanlışlar"),
-    CORRECT("Doğrular")
+private enum class ReviewFilter {
+    ALL,
+    WRONG,
+    CORRECT
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +57,7 @@ fun AnswerReviewSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.85f)
+                .fillMaxHeight(0.92f)
                 .padding(horizontal = 20.dp)
         ) {
             // ── Başlık & Kapat ────────────────────────────────────────────────
@@ -81,24 +83,29 @@ fun AnswerReviewSheet(
 
             Spacer(Modifier.height(12.dp))
 
-            // ── Filtre Sekmeleri ──────────────────────────────────────────────
+            // ── Segmented Filtre Sekmeleri (Taşma / Sığmama Önleyici) ────────
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(TriviaTheme.colors.card)
+                    .border(1.dp, TriviaTheme.colors.cardBorder, RoundedCornerShape(12.dp))
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                FilterTab(
+                SegmentedTab(
                     label = "Tümü (${records.size})",
                     selected = selectedFilter == ReviewFilter.ALL,
                     onClick = { selectedFilter = ReviewFilter.ALL },
                     modifier = Modifier.weight(1f)
                 )
-                FilterTab(
+                SegmentedTab(
                     label = "Yanlışlar ($wrongCount)",
                     selected = selectedFilter == ReviewFilter.WRONG,
                     onClick = { selectedFilter = ReviewFilter.WRONG },
                     modifier = Modifier.weight(1f)
                 )
-                FilterTab(
+                SegmentedTab(
                     label = "Doğrular ($correctCount)",
                     selected = selectedFilter == ReviewFilter.CORRECT,
                     onClick = { selectedFilter = ReviewFilter.CORRECT },
@@ -111,7 +118,9 @@ fun AnswerReviewSheet(
             // ── Soru Listesi ──────────────────────────────────────────────────
             if (filteredRecords.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -122,7 +131,9 @@ fun AnswerReviewSheet(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 32.dp)
                 ) {
@@ -136,29 +147,30 @@ fun AnswerReviewSheet(
 }
 
 @Composable
-private fun FilterTab(
+private fun SegmentedTab(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val bg = if (selected) TriviaTheme.colors.accent else TriviaTheme.colors.card
+    val bg = if (selected) TriviaTheme.colors.accent else Color.Transparent
     val textColor = if (selected) Color.White else TriviaTheme.colors.textSecondary
-    val border = if (selected) TriviaTheme.colors.accent else TriviaTheme.colors.cardBorder
 
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(38.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = bg),
-        shape = RoundedCornerShape(10.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, border),
-        contentPadding = PaddingValues(horizontal = 8.dp)
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(bg)
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
             color = textColor,
             fontSize = 12.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -214,7 +226,7 @@ private fun ReviewItem(
                 color = TriviaTheme.colors.textPrimary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
-                lineHeight = 20.sp
+                lineHeight = 21.sp
             )
 
             HorizontalDivider(
@@ -269,7 +281,7 @@ private fun AnswerLine(
             color = TriviaTheme.colors.textSecondary,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.width(100.dp)
+            modifier = Modifier.width(92.dp)
         )
         Text(
             text = answer,

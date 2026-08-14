@@ -45,26 +45,42 @@ object PlayGamesManager {
 
     /** MainActivity.onCreate'ten çağrılır; auth olduysa geçmişi bir kez aktarır */
     fun init(activity: Activity) {
-        if (!enabled) return
+        if (!enabled) {
+            android.util.Log.d("PlayGamesManager", "PGS is disabled (PGS_ENABLED=false)")
+            return
+        }
         this.activityRef = WeakReference(activity)
         scope.launch {
             runCatching {
                 val result = PlayGames.getGamesSignInClient(activity).isAuthenticated().await()
+                android.util.Log.d("PlayGamesManager", "init isAuthenticated: ${result.isAuthenticated}")
                 _isAuthenticated.value = result.isAuthenticated
                 if (result.isAuthenticated) syncTotals(activity)
+            }.onFailure {
+                android.util.Log.e("PlayGamesManager", "init isAuthenticated check failed", it)
             }
         }
     }
 
     /** İstatistik ekranındaki elle giriş düğmesi */
     fun signIn() {
-        val act = activityRef?.get() ?: return
-        if (!enabled) return
+        val act = activityRef?.get() ?: run {
+            android.util.Log.e("PlayGamesManager", "signIn: activityRef is null")
+            return
+        }
+        if (!enabled) {
+            android.util.Log.d("PlayGamesManager", "signIn: PGS is disabled")
+            return
+        }
         scope.launch {
             runCatching {
+                android.util.Log.d("PlayGamesManager", "signIn: calling GamesSignInClient.signIn()...")
                 val result = PlayGames.getGamesSignInClient(act).signIn().await()
+                android.util.Log.d("PlayGamesManager", "signIn result: isAuthenticated=${result.isAuthenticated}")
                 _isAuthenticated.value = result.isAuthenticated
                 if (result.isAuthenticated) syncTotals(act)
+            }.onFailure {
+                android.util.Log.e("PlayGamesManager", "signIn exception occurred", it)
             }
         }
     }
