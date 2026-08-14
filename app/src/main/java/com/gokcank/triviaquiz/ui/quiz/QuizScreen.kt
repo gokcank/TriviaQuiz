@@ -67,6 +67,7 @@ fun QuizScreen(
 ) {
     var navigated by rememberSaveable { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
     val activity = LocalActivity.current
 
     LaunchedEffect(Unit) {
@@ -163,6 +164,10 @@ fun QuizScreen(
                     onExtraTime       = { quizViewModel.useExtraTime() },
                     onSkip            = { quizViewModel.useSkip() },
                     onToggleFavorite  = { quizViewModel.toggleFavoriteCurrentQuestion() },
+                    onReport          = {
+                        quizViewModel.pauseTimer()
+                        showReportDialog = true
+                    },
                     onRewardedJoker   = { type ->
                         val act = activity ?: return@PlayingContent
                         quizViewModel.pauseTimer()
@@ -182,6 +187,19 @@ fun QuizScreen(
                         player1Score = s.player1Score,
                         player2Score = s.player2Score,
                         onReady      = { quizViewModel.startNextTurn() }
+                    )
+                }
+
+                // Hatalı Soru Bildirimi Diyaloğu
+                if (showReportDialog) {
+                    com.gokcank.triviaquiz.ui.components.ReportQuestionDialog(
+                        questionText  = s.currentQuestion.question,
+                        category      = s.currentQuestion.category,
+                        correctAnswer = s.currentQuestion.correctAnswer,
+                        onDismiss     = {
+                            showReportDialog = false
+                            quizViewModel.resumeTimer()
+                        }
                     )
                 }
             }
@@ -204,6 +222,7 @@ private fun PlayingContent(
     onExtraTime: () -> Unit,
     onSkip: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onReport: () -> Unit,
     onRewardedJoker: (JokerType) -> Unit,
     onBack: () -> Unit
 ) {
@@ -218,7 +237,7 @@ private fun PlayingContent(
     ) {
         Spacer(Modifier.height(20.dp))
 
-        // ── Üst Bar: Geri + İlerleme + Favori + Puan ─────────────────────
+        // ── Üst Bar: Geri + İlerleme + Favori + Rapor + Puan ─────────────
         Row(
             Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -240,6 +259,10 @@ private fun PlayingContent(
                     contentDescription = if (state.isCurrentFavorite) "Favorilerden Çıkar" else "Favorilere Ekle",
                     tint = if (state.isCurrentFavorite) TriviaTheme.colors.gold else TriviaTheme.colors.textMuted.copy(alpha = 0.35f)
                 )
+            }
+            // Hata Rapor Butonu
+            IconButton(onClick = onReport, modifier = Modifier.size(36.dp)) {
+                Text(text = "🚩", fontSize = 16.sp)
             }
             Spacer(Modifier.width(4.dp))
 

@@ -48,6 +48,8 @@ fun AnswerReviewSheet(
         }
     }
 
+    var reportingRecord by remember { mutableStateOf<AnswerRecord?>(null) }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -138,10 +140,23 @@ fun AnswerReviewSheet(
                     contentPadding = PaddingValues(bottom = 32.dp)
                 ) {
                     itemsIndexed(filteredRecords) { index, record ->
-                        ReviewItem(index = index + 1, record = record)
+                        ReviewItem(
+                            index = index + 1,
+                            record = record,
+                            onReport = { reportingRecord = record }
+                        )
                     }
                 }
             }
+        }
+
+        reportingRecord?.let { rec ->
+            com.gokcank.triviaquiz.ui.components.ReportQuestionDialog(
+                questionText = rec.question,
+                category = rec.category,
+                correctAnswer = rec.correctAnswer,
+                onDismiss = { reportingRecord = null }
+            )
         }
     }
 }
@@ -178,7 +193,8 @@ private fun SegmentedTab(
 @Composable
 private fun ReviewItem(
     index: Int,
-    record: AnswerRecord
+    record: AnswerRecord,
+    onReport: () -> Unit
 ) {
     val statusColor = when {
         record.isCorrect -> TriviaTheme.colors.correct
@@ -210,15 +226,19 @@ private fun ReviewItem(
                     text = "#$index · $playerPrefix${record.category}",
                     color = TriviaTheme.colors.textMuted,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
                 )
-                Spacer(Modifier.weight(1f))
                 Text(
                     text = statusText,
                     color = statusColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
+                Spacer(Modifier.width(6.dp))
+                IconButton(onClick = onReport, modifier = Modifier.size(24.dp)) {
+                    Text(text = "🚩", fontSize = 12.sp)
+                }
             }
 
             // Soru Metni

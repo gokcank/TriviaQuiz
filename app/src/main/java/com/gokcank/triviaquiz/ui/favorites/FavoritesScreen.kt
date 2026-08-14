@@ -59,6 +59,8 @@ fun FavoritesScreen(
         else favorites.filter { it.category == selectedCategory }
     }
 
+    var reportingItem by remember { mutableStateOf<FavoriteQuestion?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -144,10 +146,20 @@ fun FavoritesScreen(
                 items(filteredList, key = { it.question }) { item ->
                     FavoriteCard(
                         item = item,
-                        onRemove = { viewModel.removeFavorite(item.question) }
+                        onRemove = { viewModel.removeFavorite(item.question) },
+                        onReport = { reportingItem = item }
                     )
                 }
             }
+        }
+
+        reportingItem?.let { item ->
+            com.gokcank.triviaquiz.ui.components.ReportQuestionDialog(
+                questionText  = item.question,
+                category      = item.category,
+                correctAnswer = item.correctAnswer,
+                onDismiss     = { reportingItem = null }
+            )
         }
     }
 }
@@ -155,7 +167,8 @@ fun FavoritesScreen(
 @Composable
 private fun FavoriteCard(
     item: FavoriteQuestion,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onReport: () -> Unit
 ) {
     var isAnswerVisible by remember { mutableStateOf(false) }
 
@@ -168,7 +181,7 @@ private fun FavoriteCard(
             .padding(16.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            // Üst Başlık: Kategori + Yıldız Kaldır
+            // Üst Başlık: Kategori + Rapor + Yıldız Kaldır
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -180,6 +193,10 @@ private fun FavoriteCard(
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.weight(1f))
+                IconButton(onClick = onReport, modifier = Modifier.size(32.dp)) {
+                    Text(text = "🚩", fontSize = 14.sp)
+                }
+                Spacer(Modifier.width(2.dp))
                 IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
                     Icon(
                         imageVector = Icons.Default.Star,
