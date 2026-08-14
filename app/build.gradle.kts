@@ -26,8 +26,8 @@ android {
         applicationId = "com.gokcank.triviaquiz"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.1.1"
+        versionCode = 4
+        versionName = "1.2.0"
 
         // AdMob — gerçek ID'ler local.properties'te; yoksa Google'ın resmî test ID'leri
         manifestPlaceholders["admobAppId"] =

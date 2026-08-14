@@ -12,7 +12,7 @@
   [![DataStore](https://img.shields.io/badge/DATASTORE-4285F4?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com/topic/libraries/architecture/datastore)
   [![Play Games Services](https://img.shields.io/badge/PLAY%20GAMES%20SERVICES-FFCA28?style=for-the-badge&logo=google&logoColor=black)](https://developers.google.com/games/services)<br>
   [![License](https://img.shields.io/badge/LICENSE-MIT-4c1?style=for-the-badge)](LICENSE)
-  [![Version](https://img.shields.io/badge/VERSION-V1.1.1-007EC6?style=for-the-badge)](https://github.com/gokcank/trivia-quiz-app)
+  [![Version](https://img.shields.io/badge/VERSION-V1.2.0-007EC6?style=for-the-badge)](https://github.com/gokcank/trivia-quiz-app)
 </div>
 
 ---
