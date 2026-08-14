@@ -192,14 +192,19 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         timerJob?.cancel()
 
         val isCorrect = answer == current.currentQuestion.correctAnswer
+        val newStreak = if (isCorrect) current.streak + 1 else 0
+
         if (isCorrect) {
-            if (soundOn) feedback.playCorrect()
+            if (soundOn) {
+                // 3x, 5x, 10x serilerde özel coşkulu seri sesi, diğerlerinde doğru sesi
+                if (newStreak in listOf(3, 5, 10, 15, 20)) feedback.playStreak()
+                else feedback.playCorrect()
+            }
         } else {
             if (soundOn) feedback.playWrong()
             if (vibrationOn) feedback.vibrate(150)
         }
 
-        val newStreak = if (isCorrect) current.streak + 1 else 0
         val record = AnswerRecord(
             question        = current.currentQuestion.question,
             selectedAnswer  = answer,
@@ -329,6 +334,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         val current = _state.value as? QuizUiState.Playing ?: return
         if (current.isTwoPlayer || current.fiftyFiftyLeft <= 0 || current.isAnswerRevealed || current.removedAnswers.isNotEmpty()) return
 
+        if (soundOn) feedback.playJoker()
+
         val removed = current.currentQuestion.shuffledAnswers
             .filter { it != current.currentQuestion.correctAnswer }
             .shuffled()
@@ -344,6 +351,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     fun useExtraTime() {
         val current = _state.value as? QuizUiState.Playing ?: return
         if (current.isTwoPlayer || !current.timed || current.extraTimeLeft <= 0 || current.isAnswerRevealed) return
+
+        if (soundOn) feedback.playJoker()
 
         _state.update { s ->
             (s as QuizUiState.Playing).copy(
@@ -375,6 +384,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         val current = _state.value as? QuizUiState.Playing ?: return
         if (current.isTwoPlayer || current.skipLeft <= 0 || current.isAnswerRevealed) return
 
+        if (soundOn) feedback.playJoker()
         timerJob?.cancel()
         val record = AnswerRecord(
             question        = current.currentQuestion.question,
@@ -465,6 +475,12 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                 val s = _state.value as? QuizUiState.Playing ?: return@launch
                 if (s.isAnswerRevealed || s.isTransferringTurn) return@launch
                 val newTime = s.timeLeft - 1
+                
+                // Son 5 saniyede tik-tak geri sayım efekti
+                if (newTime in 1..5 && soundOn) {
+                    feedback.playTick()
+                }
+
                 _state.update { st ->
                     if (st is QuizUiState.Playing) st.copy(timeLeft = newTime) else st
                 }

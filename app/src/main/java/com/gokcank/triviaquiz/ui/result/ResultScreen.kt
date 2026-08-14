@@ -24,9 +24,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gokcank.triviaquiz.ads.InterstitialAdManager
+import com.gokcank.triviaquiz.data.SettingsRepository
 import com.gokcank.triviaquiz.theme.TriviaTheme
 import com.gokcank.triviaquiz.ui.components.StatCard
 import com.gokcank.triviaquiz.ui.quiz.AnswerRecord
+import com.gokcank.triviaquiz.util.FeedbackManager
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun ResultScreen(
@@ -55,9 +58,15 @@ fun ResultScreen(
     val wrong = total - score - skipped
 
     val activity = LocalActivity.current
+    val context = LocalContext.current
     var showReviewSheet by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         activity?.let { InterstitialAdManager.onGameFinished(it) }
+        val soundOn = SettingsRepository(context).soundEnabled.first()
+        if (soundOn && (percentage >= 0.5f || isTwoPlayer)) {
+            val feedback = FeedbackManager(context)
+            feedback.playVictory()
+        }
     }
 
     val (grade, emoji) = when {

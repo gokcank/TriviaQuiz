@@ -13,7 +13,7 @@ import com.gokcank.triviaquiz.R
 class FeedbackManager(context: Context) {
 
     private val soundPool: SoundPool = SoundPool.Builder()
-        .setMaxStreams(2)
+        .setMaxStreams(4)
         .setAudioAttributes(
             AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_GAME)
@@ -25,6 +25,10 @@ class FeedbackManager(context: Context) {
     private val correctId = soundPool.load(context, R.raw.correct, 1)
     private val wrongId   = soundPool.load(context, R.raw.wrong, 1)
     private val timeoutId = soundPool.load(context, R.raw.timeout, 1)
+    private val tickId    = soundPool.load(context, R.raw.tick, 1)
+    private val jokerId   = soundPool.load(context, R.raw.joker, 1)
+    private val streakId  = soundPool.load(context, R.raw.streak, 1)
+    private val victoryId = soundPool.load(context, R.raw.victory, 1)
 
     private val vibrator: Vibrator =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -37,6 +41,10 @@ class FeedbackManager(context: Context) {
     fun playCorrect() = play(correctId)
     fun playWrong()   = play(wrongId)
     fun playTimeout() = play(timeoutId)
+    fun playTick()    = play(tickId)
+    fun playJoker()   = play(jokerId)
+    fun playStreak()  = play(streakId)
+    fun playVictory() = play(victoryId)
 
     private fun play(soundId: Int) {
         soundPool.play(soundId, 1f, 1f, 1, 0, 1f)
