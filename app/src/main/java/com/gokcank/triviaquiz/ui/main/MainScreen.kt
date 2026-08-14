@@ -58,6 +58,7 @@ fun MainScreen(
     var selectedDifficulty by remember { mutableStateOf("easy") }
     var selectedAmount    by remember { mutableIntStateOf(10) }
     var selectedTimed     by remember { mutableStateOf(true) }
+    var isTwoPlayer       by remember { mutableStateOf(false) }
     var categoryExpanded  by remember { mutableStateOf(false) }
 
     val dailyState by dailyViewModel.daily.collectAsStateWithLifecycle()
@@ -189,6 +190,28 @@ fun MainScreen(
 
             Spacer(Modifier.height(16.dp))
 
+            // ── Oyun Modu ────────────────────────────────────────────────
+            SectionCard(title = "OYUN MODU") {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SelectableChip(
+                        label    = "👤 Tek Kişilik",
+                        selected = !isTwoPlayer,
+                        color    = TriviaTheme.colors.accent,
+                        modifier = Modifier.weight(1f),
+                        onClick  = { isTwoPlayer = false }
+                    )
+                    SelectableChip(
+                        label    = "👥 2 Kişilik (Sırayla)",
+                        selected = isTwoPlayer,
+                        color    = TriviaTheme.colors.gold,
+                        modifier = Modifier.weight(1f),
+                        onClick  = { isTwoPlayer = true }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
             // ── Zorluk ───────────────────────────────────────────────────
             SectionCard(title = "ZORLUK") {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -253,7 +276,8 @@ fun MainScreen(
                             categoryName = selectedCategory.displayName,
                             difficulty   = selectedDifficulty,
                             amount       = selectedAmount,
-                            timed        = selectedTimed
+                            timed        = selectedTimed,
+                            isTwoPlayer  = isTwoPlayer
                         )
                     )
                 }

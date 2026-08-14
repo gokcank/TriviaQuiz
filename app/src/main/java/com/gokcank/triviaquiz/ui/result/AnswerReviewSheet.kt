@@ -201,12 +201,13 @@ private fun ReviewItem(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Kategori & Durum Etiketi
+            val playerPrefix = if (record.player == 2) "🔵 2. Oyuncu · " else if (record.player == 1) "🔴 1. Oyuncu · " else ""
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "#$index · ${record.category}",
+                    text = "#$index · $playerPrefix${record.category}",
                     color = TriviaTheme.colors.textMuted,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold

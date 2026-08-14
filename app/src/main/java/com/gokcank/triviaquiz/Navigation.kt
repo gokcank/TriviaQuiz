@@ -77,7 +77,8 @@ fun MainNavigation() {
                     difficulty     = key.difficulty,
                     amount         = key.amount,
                     timed          = key.timed,
-                    onQuizComplete = { score, total, bestStreak, skipped, dailyCompletedNow, gainedXp, leveledUp, newLevel, records ->
+                    isTwoPlayer    = key.isTwoPlayer,
+                    onQuizComplete = { score, total, bestStreak, skipped, dailyCompletedNow, gainedXp, leveledUp, newLevel, records, isTwoPlayer, player1Score, player2Score, player1Total, player2Total ->
                         backStack.add(
                             Result(
                                 score             = score,
@@ -92,7 +93,12 @@ fun MainNavigation() {
                                 gainedXp          = gainedXp,
                                 leveledUp         = leveledUp,
                                 newLevel          = newLevel,
-                                records           = records
+                                records           = records,
+                                isTwoPlayer       = isTwoPlayer,
+                                player1Score      = player1Score,
+                                player2Score      = player2Score,
+                                player1Total      = player1Total,
+                                player2Total      = player2Total
                             )
                         )
                     },
@@ -115,6 +121,11 @@ fun MainNavigation() {
                     leveledUp         = key.leveledUp,
                     newLevel          = key.newLevel,
                     records           = key.records,
+                    isTwoPlayer       = key.isTwoPlayer,
+                    player1Score      = key.player1Score,
+                    player2Score      = key.player2Score,
+                    player1Total      = key.player1Total,
+                    player2Total      = key.player2Total,
                     onPlayAgain       = {
                         val size = backStack.size
                         repeat(size - 1) { backStack.removeLastOrNull() }
@@ -123,7 +134,8 @@ fun MainNavigation() {
                                 categoryName = key.categoryName,
                                 difficulty   = key.difficulty,
                                 amount       = key.amount,
-                                timed        = key.timed
+                                timed        = key.timed,
+                                isTwoPlayer  = key.isTwoPlayer
                             )
                         )
                     },

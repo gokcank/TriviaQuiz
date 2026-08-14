@@ -49,7 +49,8 @@ data class AnswerRecord(
     val isCorrect: Boolean,
     val isSkipped: Boolean,
     val category: String,
-    val difficulty: String
+    val difficulty: String,
+    val player: Int = 1 // 1: 1. Oyuncu, 2: 2. Oyuncu
 )
 
 sealed interface QuizUiState {
@@ -64,6 +65,11 @@ sealed interface QuizUiState {
         val timeLeft: Int = TIMER_SECONDS,
         val timed: Boolean = true,
         val timerTotal: Int = TIMER_SECONDS,
+        // 2 Kişilik Mod Alanları
+        val isTwoPlayer: Boolean = false,
+        val player1Score: Int = 0,
+        val player2Score: Int = 0,
+        val isTransferringTurn: Boolean = false,
         // Seri
         val streak: Int = 0,
         val bestStreak: Int = 0,
@@ -83,6 +89,10 @@ sealed interface QuizUiState {
         val currentQuestion: QuizQuestion get() = questions[currentIndex]
         val totalQuestions: Int get() = questions.size
         val progress: Float get() = (currentIndex + 1f) / totalQuestions
+        val currentPlayer: Int get() = if (isTwoPlayer) (currentIndex % 2) + 1 else 1
+        val nextPlayer: Int get() = if (isTwoPlayer) ((currentIndex + 1) % 2) + 1 else 1
+        val player1Total: Int get() = if (isTwoPlayer) (questions.size + 1) / 2 else questions.size
+        val player2Total: Int get() = if (isTwoPlayer) questions.size / 2 else 0
     }
     data class Finished(
         val score: Int,
@@ -93,7 +103,12 @@ sealed interface QuizUiState {
         val records: List<AnswerRecord> = emptyList(),
         val gainedXp: Int = 0,
         val leveledUp: Boolean = false,
-        val newLevel: Int = 1
+        val newLevel: Int = 1,
+        val isTwoPlayer: Boolean = false,
+        val player1Score: Int = 0,
+        val player2Score: Int = 0,
+        val player1Total: Int = 0,
+        val player2Total: Int = 0
     ) : QuizUiState
 }
 
@@ -130,7 +145,13 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { settingsRepository.vibrationEnabled.collect { vibrationOn = it } }
     }
 
-    fun loadQuestions(amount: Int, categoryName: String?, difficulty: String, timed: Boolean) {
+    fun loadQuestions(
+        amount: Int,
+        categoryName: String?,
+        difficulty: String,
+        timed: Boolean,
+        isTwoPlayer: Boolean = false
+    ) {
         viewModelScope.launch {
             _state.value = QuizUiState.Loading
             try {
@@ -139,15 +160,16 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                     _state.value = QuizUiState.Error("Bu kategoride yeterli soru bulunamadı.")
                     return@launch
                 }
-                val timerTotal  = settingsRepository.timerSeconds.first()
-                // Günlük görev tamamlandıysa o günün oyunlarında tüm jokerler +1
-                val bonus       = if (dailyRepository.isBonusActiveToday()) 1 else 0
-                val jokerRights = (if (amount >= 15) 2 else 1) + bonus
-                quizDifficulty  = difficulty
+                val timerTotal = settingsRepository.timerSeconds.first()
+                // Günlük görev tamamlandıysa o günün oyunlarında tüm jokerler +1 (2 kişilik modda jokerler kapalı)
+                val bonus = if (dailyRepository.isBonusActiveToday()) 1 else 0
+                val jokerRights = if (isTwoPlayer) 0 else (if (amount >= 15) 2 else 1) + bonus
+                quizDifficulty = difficulty
                 val quizQuestions = raw.map { it.toQuizQuestion() }
                 _state.value = QuizUiState.Playing(
                     questions      = quizQuestions,
                     timed          = timed,
+                    isTwoPlayer    = isTwoPlayer,
                     timeLeft       = timerTotal,
                     timerTotal     = timerTotal,
                     fiftyFiftyLeft = jokerRights,
@@ -164,7 +186,7 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onAnswerSelected(answer: String) {
         val current = _state.value as? QuizUiState.Playing ?: return
-        if (current.selectedAnswer != null || current.isAnswerRevealed) return
+        if (current.selectedAnswer != null || current.isAnswerRevealed || current.isTransferringTurn) return
         if (answer in current.removedAnswers) return
 
         timerJob?.cancel()
@@ -186,30 +208,37 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             isCorrect       = isCorrect,
             isSkipped       = false,
             category        = current.currentQuestion.category,
-            difficulty      = current.currentQuestion.difficulty
+            difficulty      = current.currentQuestion.difficulty,
+            player          = current.currentPlayer
         )
 
+        val p1Delta = if (current.isTwoPlayer && current.currentPlayer == 1 && isCorrect) 1 else 0
+        val p2Delta = if (current.isTwoPlayer && current.currentPlayer == 2 && isCorrect) 1 else 0
+
         _state.update { s ->
-            (s as QuizUiState.Playing).copy(
+            val cur = s as QuizUiState.Playing
+            cur.copy(
                 selectedAnswer   = answer,
                 isAnswerRevealed = true,
-                score            = if (isCorrect) s.score + 1 else s.score,
+                score            = if (isCorrect) cur.score + 1 else cur.score,
+                player1Score     = cur.player1Score + p1Delta,
+                player2Score     = cur.player2Score + p2Delta,
                 streak           = newStreak,
-                bestStreak       = maxOf(s.bestStreak, newStreak),
-                answeredLog      = s.answeredLog + (s.currentQuestion.category to isCorrect),
-                records          = s.records + record
+                bestStreak       = maxOf(cur.bestStreak, newStreak),
+                answeredLog      = cur.answeredLog + (cur.currentQuestion.category to isCorrect),
+                records          = cur.records + record
             )
         }
 
         viewModelScope.launch {
             delay(REVEAL_DELAY_MS)
-            moveToNext()
+            handleQuestionCompletion()
         }
     }
 
     private fun onTimeUp() {
         val current = _state.value as? QuizUiState.Playing ?: return
-        if (current.isAnswerRevealed) return
+        if (current.isAnswerRevealed || current.isTransferringTurn) return
 
         if (soundOn) feedback.playTimeout()
         if (vibrationOn) feedback.vibrate(250)
@@ -222,22 +251,45 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             isCorrect       = false,
             isSkipped       = false,
             category        = current.currentQuestion.category,
-            difficulty      = current.currentQuestion.difficulty
+            difficulty      = current.currentQuestion.difficulty,
+            player          = current.currentPlayer
         )
 
         _state.update { s ->
-            (s as QuizUiState.Playing).copy(
+            val cur = s as QuizUiState.Playing
+            cur.copy(
                 isAnswerRevealed = true,
                 timeLeft         = 0,
                 streak           = 0,
-                answeredLog      = s.answeredLog + (s.currentQuestion.category to false),
-                records          = s.records + record
+                answeredLog      = cur.answeredLog + (cur.currentQuestion.category to false),
+                records          = cur.records + record
             )
         }
         viewModelScope.launch {
             delay(REVEAL_DELAY_MS)
+            handleQuestionCompletion()
+        }
+    }
+
+    private fun handleQuestionCompletion() {
+        val current = _state.value as? QuizUiState.Playing ?: return
+        if (current.currentIndex >= current.questions.size - 1) {
+            finishQuiz()
+        } else if (current.isTwoPlayer) {
+            // 2 Kişilik mod: Sırayı diğer oyuncuya devretme ekranını aç
+            _state.update { s ->
+                if (s is QuizUiState.Playing) s.copy(isTransferringTurn = true) else s
+            }
+        } else {
             moveToNext()
         }
+    }
+
+    /** 2 Kişilik modda diğer oyuncu telefonu devralıp 'Başla' dediğinde çağrılır */
+    fun startNextTurn() {
+        val current = _state.value as? QuizUiState.Playing ?: return
+        if (!current.isTransferringTurn) return
+        moveToNext()
     }
 
     // ── Favori İşlemleri ──────────────────────────────────────────────────────
@@ -273,10 +325,9 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Jokerler ──────────────────────────────────────────────────────────────
 
-    /** İki yanlış şıkkı eler (soru başına bir kez) */
     fun useFiftyFifty() {
         val current = _state.value as? QuizUiState.Playing ?: return
-        if (current.fiftyFiftyLeft <= 0 || current.isAnswerRevealed || current.removedAnswers.isNotEmpty()) return
+        if (current.isTwoPlayer || current.fiftyFiftyLeft <= 0 || current.isAnswerRevealed || current.removedAnswers.isNotEmpty()) return
 
         val removed = current.currentQuestion.shuffledAnswers
             .filter { it != current.currentQuestion.correctAnswer }
@@ -290,10 +341,9 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Kalan süreye 15 sn ekler (yalnız zamanlı mod) */
     fun useExtraTime() {
         val current = _state.value as? QuizUiState.Playing ?: return
-        if (!current.timed || current.extraTimeLeft <= 0 || current.isAnswerRevealed) return
+        if (current.isTwoPlayer || !current.timed || current.extraTimeLeft <= 0 || current.isAnswerRevealed) return
 
         _state.update { s ->
             (s as QuizUiState.Playing).copy(
@@ -303,18 +353,16 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Rewarded reklam gösterilirken sayacı durdurur */
     fun pauseTimer() { timerJob?.cancel() }
 
-    /** Rewarded reklam kapandıktan sonra sayacı yeniden başlatır */
     fun resumeTimer() {
-        if ((_state.value as? QuizUiState.Playing)?.timed == true) startTimer()
+        val cur = _state.value as? QuizUiState.Playing ?: return
+        if (cur.timed && !cur.isTransferringTurn && !cur.isAnswerRevealed) startTimer()
     }
 
-    /** Rewarded ödülünde ilgili joker hakkını +1 artırır */
     fun grantExtraJoker(type: JokerType) {
         _state.update { s ->
-            if (s !is QuizUiState.Playing) return@update s
+            if (s !is QuizUiState.Playing || s.isTwoPlayer) return@update s
             when (type) {
                 JokerType.FIFTY_FIFTY -> s.copy(fiftyFiftyLeft = s.fiftyFiftyLeft + 1)
                 JokerType.EXTRA_TIME  -> s.copy(extraTimeLeft  = s.extraTimeLeft  + 1)
@@ -323,10 +371,9 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Soruyu puanlamadan ve istatistiğe yazmadan atlar; seriyi bozmaz */
     fun useSkip() {
         val current = _state.value as? QuizUiState.Playing ?: return
-        if (current.skipLeft <= 0 || current.isAnswerRevealed) return
+        if (current.isTwoPlayer || current.skipLeft <= 0 || current.isAnswerRevealed) return
 
         timerJob?.cancel()
         val record = AnswerRecord(
@@ -337,7 +384,8 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
             isCorrect       = false,
             isSkipped       = true,
             category        = current.currentQuestion.category,
-            difficulty      = current.currentQuestion.difficulty
+            difficulty      = current.currentQuestion.difficulty,
+            player          = current.currentPlayer
         )
 
         _state.update { s ->
@@ -347,73 +395,75 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
                 records      = s.records + record
             )
         }
-        moveToNext()
+        handleQuestionCompletion()
     }
 
     // ── Akış ──────────────────────────────────────────────────────────────────
 
     private fun moveToNext() {
         val current = _state.value as? QuizUiState.Playing ?: return
-        if (current.currentIndex >= current.questions.size - 1) {
-            val total = current.questions.size
-            val scorePercent = if (total > 0) (current.score * 100) / total else 0
-            viewModelScope.launch {
-                val totals = statsRepository.recordGame(current.answeredLog, current.bestStreak, scorePercent)
-                val daily = dailyRepository.onGameFinished(current.answeredLog, quizDifficulty, scorePercent)
-                
-                // XP Hesabı: Doğru cevaplar + %100 başarı bonusu + günlük görev bonusu
-                val xpFromAnswers = current.score * XP_PER_CORRECT_ANSWER
-                val xpFromPerfect = if (scorePercent >= 100) XP_PERFECT_GAME_BONUS else 0
-                val xpFromDaily = if (daily.completedNow) XP_DAILY_MISSION_BONUS else 0
-                val totalXpGained = xpFromAnswers + xpFromPerfect + xpFromDaily
-                val xpGainResult = xpRepository.addXp(totalXpGained)
+        val nextIndex = current.currentIndex + 1
+        val nextQuestion = current.questions[nextIndex]
+        _state.update { s ->
+            (s as QuizUiState.Playing).copy(
+                currentIndex       = nextIndex,
+                selectedAnswer     = null,
+                isAnswerRevealed   = false,
+                isTransferringTurn = false,
+                timeLeft           = current.timerTotal,
+                removedAnswers     = emptyList()
+            )
+        }
+        observeFavoriteFor(nextQuestion.question)
+        if ((_state.value as? QuizUiState.Playing)?.timed == true) startTimer()
+    }
 
-                // Ateşle-unut: girişsiz/çevrimdışıysa sessizce atlanır
-                PlayGamesManager.onGameFinished(
-                    totals = totals,
-                    game   = GameSummary(scorePercent, current.bestStreak, quizDifficulty),
-                    daily  = daily.state
-                )
-                _state.value = QuizUiState.Finished(
-                    score             = current.score,
-                    total             = total,
-                    bestStreak        = current.bestStreak,
-                    skipped           = current.skippedCount,
-                    dailyCompletedNow = daily.completedNow,
-                    records           = current.records,
-                    gainedXp          = totalXpGained,
-                    leveledUp         = xpGainResult.leveledUp,
-                    newLevel          = xpGainResult.newLevel
-                )
-            }
-        } else {
-            val nextIndex = current.currentIndex + 1
-            val nextQuestion = current.questions[nextIndex]
-            _state.update { s ->
-                (s as QuizUiState.Playing).copy(
-                    currentIndex     = nextIndex,
-                    selectedAnswer   = null,
-                    isAnswerRevealed = false,
-                    timeLeft         = current.timerTotal,
-                    removedAnswers   = emptyList()
-                )
-            }
-            observeFavoriteFor(nextQuestion.question)
-            if ((_state.value as? QuizUiState.Playing)?.timed == true) startTimer()
+    private fun finishQuiz() {
+        val current = _state.value as? QuizUiState.Playing ?: return
+        val total = current.questions.size
+        val scorePercent = if (total > 0) (current.score * 100) / total else 0
+        viewModelScope.launch {
+            val totals = statsRepository.recordGame(current.answeredLog, current.bestStreak, scorePercent)
+            val daily = dailyRepository.onGameFinished(current.answeredLog, quizDifficulty, scorePercent)
+
+            val xpFromAnswers = current.score * XP_PER_CORRECT_ANSWER
+            val xpFromPerfect = if (scorePercent >= 100) XP_PERFECT_GAME_BONUS else 0
+            val xpFromDaily = if (daily.completedNow) XP_DAILY_MISSION_BONUS else 0
+            val totalXpGained = xpFromAnswers + xpFromPerfect + xpFromDaily
+            val xpGainResult = xpRepository.addXp(totalXpGained)
+
+            PlayGamesManager.onGameFinished(
+                totals = totals,
+                game   = GameSummary(scorePercent, current.bestStreak, quizDifficulty),
+                daily  = daily.state
+            )
+
+            _state.value = QuizUiState.Finished(
+                score             = current.score,
+                total             = total,
+                bestStreak        = current.bestStreak,
+                skipped           = current.skippedCount,
+                dailyCompletedNow = daily.completedNow,
+                records           = current.records,
+                gainedXp          = totalXpGained,
+                leveledUp         = xpGainResult.leveledUp,
+                newLevel          = xpGainResult.newLevel,
+                isTwoPlayer       = current.isTwoPlayer,
+                player1Score      = current.player1Score,
+                player2Score      = current.player2Score,
+                player1Total      = current.player1Total,
+                player2Total      = current.player2Total
+            )
         }
     }
 
-    /**
-     * Sayaç, state'teki timeLeft'i saniyede bir azaltır — böylece +15 sn jokeri
-     * gibi dışarıdan yapılan süre eklemeleri kaybolmaz.
-     */
     private fun startTimer() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (true) {
                 delay(1000)
                 val s = _state.value as? QuizUiState.Playing ?: return@launch
-                if (s.isAnswerRevealed) return@launch
+                if (s.isAnswerRevealed || s.isTransferringTurn) return@launch
                 val newTime = s.timeLeft - 1
                 _state.update { st ->
                     if (st is QuizUiState.Playing) st.copy(timeLeft = newTime) else st
