@@ -19,6 +19,7 @@
 # ── Navigation NavKey sınıfları ──────────────────────────────────────────────
 # data object / data class olan NavKey'ler refleksiyonla erişiliyor
 -keep class com.gokcank.triviaquiz.Home { *; }
+-keep class com.gokcank.triviaquiz.Favorites { *; }
 -keep class com.gokcank.triviaquiz.Settings { *; }
 -keep class com.gokcank.triviaquiz.About { *; }
 -keep class com.gokcank.triviaquiz.Stats { *; }
