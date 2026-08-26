@@ -158,6 +158,9 @@ dependencies {
   implementation(libs.play.services.games.v2)
   implementation(libs.kotlinx.coroutines.play.services)
 
+  // Play Services'in dolaylı getirdiği eski androidx.fragment sürümünü güncellemek için
+  implementation(libs.androidx.fragment.ktx)
+
   // Google Fonts
   implementation(libs.androidx.compose.ui.google.fonts)
 
