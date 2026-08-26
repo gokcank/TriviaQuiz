@@ -66,7 +66,7 @@ fun AboutScreen(
                 color = TriviaTheme.colors.accent
             )
             Text(
-                text     = "Sürüm v${BuildConfig.VERSION_NAME} — Kapalı Beta",
+                text     = "Sürüm v${BuildConfig.VERSION_NAME}",
                 color    = TriviaTheme.colors.textMuted,
                 modifier = Modifier.padding(top = 4.dp)
             )
